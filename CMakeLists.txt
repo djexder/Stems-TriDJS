@@ -33,7 +33,7 @@ target_sources(TriDJs_Separador_Stems PRIVATE
     Source/StemEngine.h
 )
 
-target_compile_options(TriDJs_Separador_Stems PRIVATE "${TORCH_CXX_FLAGS}")
+target_compile_options(TriDJs_Separador_Stems PRIVATE "${TORCH_CXX_FLAGS}" "/utf-8")
 
 target_compile_definitions(TriDJs_Separador_Stems PRIVATE
     JUCE_WEB_BROWSER=0

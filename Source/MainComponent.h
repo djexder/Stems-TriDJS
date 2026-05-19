@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <JuceHeader.h>
 #include "StemEngine.h"
@@ -22,7 +22,7 @@ public:
         auto txt = button.getButtonText();
 
         // 1. Clear Button (Text only)
-        if (txt == "Voltar ao Início")
+        if (txt == juce::CharPointer_UTF8("Voltar ao Início"))
         {
             if (shouldDrawButtonAsHighlighted || shouldDrawButtonAsPressed)
             {
@@ -103,7 +103,7 @@ public:
         
         if (txt == "CANCEL OPERATION")
         {
-            g.setFont (juce::Font ("JetBrains Mono", 11.0f, juce::Font::bold));
+            g.setFont (juce::Font ("Consolas", 11.0f, juce::Font::bold));
             g.setColour (shouldDrawButtonAsHighlighted ? juce::Colours::white : juce::Colour::fromString("#FFE5E2E1"));
             g.drawText (txt, button.getLocalBounds(), juce::Justification::centred);
             return;
@@ -111,15 +111,15 @@ public:
 
         if (txt == "Salvar todas")
         {
-            g.setFont (juce::Font ("Geist", 15.0f, juce::Font::bold));
+            g.setFont (juce::Font ("Segoe UI", 15.0f, juce::Font::bold));
             g.setColour (juce::Colour::fromString("#FF002111")); // Dark green contrast text
             g.drawText (txt, button.getLocalBounds(), juce::Justification::centred);
             return;
         }
 
-        if (txt == "Voltar ao Início")
+        if (txt == juce::CharPointer_UTF8("Voltar ao Início"))
         {
-            g.setFont (juce::Font ("Geist", 12.0f, juce::Font::bold));
+            g.setFont (juce::Font ("Segoe UI", 12.0f, juce::Font::bold));
             g.setColour (shouldDrawButtonAsHighlighted ? juce::Colour::fromString("#FFFFB4AB") : juce::Colour::fromString("#FFC1C6D7"));
             g.drawText (txt.toUpperCase(), button.getLocalBounds(), juce::Justification::centred);
             return;
@@ -129,14 +129,14 @@ public:
         bool isCircular = (std::abs(button.getWidth() - button.getHeight()) < 5);
         if (isCircular)
         {
-            g.setFont (juce::Font ("Geist", 18.0f, juce::Font::bold));
+            g.setFont (juce::Font ("Segoe UI", 18.0f, juce::Font::bold));
             auto accentCol = button.findColour(juce::TextButton::textColourOffId);
             g.setColour (shouldDrawButtonAsPressed ? accentCol.brighter(0.2f) : accentCol);
             g.drawText (txt, button.getLocalBounds().withY(button.getLocalBounds().getY() - 1), juce::Justification::centred);
             return;
         }
 
-        g.setFont (juce::Font ("Geist", 13.0f, juce::Font::bold));
+        g.setFont (juce::Font ("Segoe UI", 13.0f, juce::Font::bold));
         g.setColour (button.findColour (juce::TextButton::textColourOffId));
         g.drawText (txt, button.getLocalBounds(), juce::Justification::centred);
     }
@@ -294,7 +294,7 @@ private:
     std::vector<std::unique_ptr<StemPlayer>> stemPlayers;
     
     juce::TextButton downloadAllBtn { "Salvar todas" };
-    juce::TextButton clearBtn { "Voltar ao Início" };
+    juce::TextButton clearBtn { juce::CharPointer_UTF8("Voltar ao Início") };
 
     // Audio Engine
     juce::AudioFormatManager formatManager;
@@ -316,7 +316,15 @@ private:
     void drawProcessingScreen(juce::Graphics& g);
     void drawResultsScreen(juce::Graphics& g);
 
+    void mouseMove(const juce::MouseEvent& event) override;
+    void mouseUp(const juce::MouseEvent& event) override;
+    void mouseExit(const juce::MouseEvent& event) override;
+
     CustomLookAndFeel customLookAndFeel;
+
+private:
+    juce::Rectangle<int> cardBanner1, cardBanner2;
+    int hoveredCard = 0; // 0 = none, 1 = banner1, 2 = banner2
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

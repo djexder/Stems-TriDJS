@@ -1,4 +1,4 @@
-#include "MainComponent.h"
+﻿#include "MainComponent.h"
 #include "StemEngine.h"
 
 // Define styling colors based on HTML neon theme
@@ -42,7 +42,7 @@ MainComponent::MainComponent() {
   progressBar.setColour(juce::ProgressBar::backgroundColourId, colSurface);
 
   addChildComponent(progressLabel);
-  progressLabel.setFont(juce::Font("Geist", 28.0f, juce::Font::bold));
+  progressLabel.setFont(juce::Font("Segoe UI", 28.0f, juce::Font::bold));
   progressLabel.setColour(juce::Label::textColourId, juce::Colours::white);
   progressLabel.setJustificationType(juce::Justification::centred);
   progressLabel.setText("Separando Stems...", juce::dontSendNotification);
@@ -163,7 +163,7 @@ void MainComponent::paint(juce::Graphics &g) {
       g.drawImage(splashImage, splashArea, juce::RectanglePlacement::stretchToFit);
     } else {
       g.setColour(juce::Colours::white);
-      g.setFont(juce::Font("Geist", 20.0f, juce::Font::bold));
+      g.setFont(juce::Font("Segoe UI", 20.0f, juce::Font::bold));
       g.drawText("Carregando engine de IA...", getLocalBounds(), juce::Justification::centred);
     }
     return;
@@ -200,14 +200,13 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
   // 1. Draw Title Area
   auto titleArea = area.removeFromTop(90);
   g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Geist", 28.0f, juce::Font::bold));
+  g.setFont(juce::Font("Segoe UI", 28.0f, juce::Font::bold));
   g.drawText("Separe Suas Faixas", titleArea.removeFromTop(40),
              juce::Justification::centred);
 
   g.setColour(juce::Colour::fromString("#FFC1C6D7")); // on-surface-variant
-  g.setFont(juce::Font("Geist", 14.0f, juce::Font::plain));
-  g.drawText("Envie qualquer arquivo de áudio para gerar stems de nível "
-             "profissional (Bateria, Baixo, Vocal, Outros).",
+  g.setFont(juce::Font("Segoe UI", 14.0f, juce::Font::plain));
+  g.drawText(juce::CharPointer_UTF8("Envie qualquer arquivo de áudio para gerar stems de nível profissional (Bateria, Baixo, Vocal, Outros)."),
              titleArea, juce::Justification::centred);
 
   // 2. Main Bento Grid Area (remaining space minus bottom section)
@@ -247,80 +246,58 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
              (float)iconArea.getY() + 15.0f, 3.0f);
 
   g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Geist", 20.0f, juce::Font::bold));
-  g.drawText("Envie ou arraste sua música aqui",
+  g.setFont(juce::Font("Segoe UI", 20.0f, juce::Font::bold));
+  g.drawText(juce::CharPointer_UTF8("Envie ou arraste sua música aqui"),
              leftCard.withY(leftCard.getCentreY() - 10).withHeight(30),
              juce::Justification::centred);
 
   g.setColour(juce::Colour::fromString("#FF8B90A0"));
-  g.setFont(juce::Font("JetBrains Mono", 11.0f, juce::Font::plain));
-  g.drawText("MP3, WAV ou FLAC até 50MB",
+  g.setFont(juce::Font("Consolas", 11.0f, juce::Font::plain));
+  g.drawText(juce::CharPointer_UTF8("MP3, WAV ou FLAC até 50MB"),
              leftCard.withY(leftCard.getCentreY() + 20).withHeight(20),
              juce::Justification::centred);
 
   // B) Draw Right Bento Cards (Stacked - 3 Cards)
   int cardHeight = (rightColumn.getHeight() - 24) / 3;
-  auto card1 = rightColumn.removeFromTop(cardHeight);
+  cardBanner1 = rightColumn.removeFromTop(cardHeight);
   rightColumn.removeFromTop(12); // gap
-  auto card2 = rightColumn.removeFromTop(cardHeight);
+  cardBanner2 = rightColumn.removeFromTop(cardHeight);
   rightColumn.removeFromTop(12); // gap
   auto card3 = rightColumn;
 
-  // Card 1: Lossless Output (Saída Sem Perdas)
-  g.setColour(juce::Colour::fromString("#FF1C1B1B")); // surface-container-low
-  g.fillRoundedRectangle(card1.toFloat(), 12.0f);
-  g.setColour(juce::Colour::fromString("#FF353534")); // border
-  g.drawRoundedRectangle(card1.toFloat(), 12.0f, 1.0f);
-
-  auto card1Text = card1.reduced(16);
-  auto hqIconArea = card1Text.removeFromTop(20);
-  auto hqSquare = hqIconArea.removeFromLeft(28).withSizeKeepingCentre(24, 16);
-  g.setColour(colDrums); // neon green
-  g.fillRoundedRectangle(hqSquare.toFloat(), 3.0f);
-  g.setColour(juce::Colour::fromString("#FF002111"));
-  g.setFont(juce::Font("JetBrains Mono", 10.0f, juce::Font::bold));
-  g.drawText("HQ", hqSquare, juce::Justification::centred);
-
-  g.setColour(colDrums);
-  g.setFont(juce::Font("Geist", 15.0f, juce::Font::bold));
-  g.drawText("Saída Sem Perdas", hqIconArea.translated(8, 0),
-             juce::Justification::centredLeft);
-
-  g.setColour(juce::Colour::fromString("#FFC1C6D7"));
-  g.setFont(juce::Font("Geist", 12.0f, juce::Font::plain));
-  g.drawText(
-      "Nossa IA mantém a máxima fidelidade de 24 bits durante todo o processo.",
-      card1Text, juce::Justification::topLeft, true);
-
-  // Card 2: Ultra Fast (Ultra Rápido)
+  // Card 1: Banner Image
   g.setColour(juce::Colour::fromString("#FF1C1B1B"));
-  g.fillRoundedRectangle(card2.toFloat(), 12.0f);
-  g.setColour(juce::Colour::fromString("#FF353534"));
-  g.drawRoundedRectangle(card2.toFloat(), 12.0f, 1.0f);
+  g.fillRoundedRectangle(cardBanner1.toFloat(), 12.0f);
+  if (hoveredCard == 1)
+      g.setColour(juce::Colour::fromString("#FF353534").brighter(0.3f));
+  else
+      g.setColour(juce::Colour::fromString("#FF353534"));
+  g.drawRoundedRectangle(cardBanner1.toFloat(), 12.0f, 1.0f);
 
-  auto card2Text = card2.reduced(16);
-  auto boltIconArea = card2Text.removeFromTop(20);
-  auto boltSquare = boltIconArea.removeFromLeft(20);
-  g.setColour(colBass); // neon yellow
-  juce::Path boltPath;
-  boltPath.startNewSubPath(boltSquare.getX() + 12.0f, boltSquare.getY() + 1.0f);
-  boltPath.lineTo(boltSquare.getX() + 5.0f, boltSquare.getY() + 10.0f);
-  boltPath.lineTo(boltSquare.getX() + 10.0f, boltSquare.getY() + 10.0f);
-  boltPath.lineTo(boltSquare.getX() + 8.0f, boltSquare.getY() + 18.0f);
-  boltPath.lineTo(boltSquare.getX() + 15.0f, boltSquare.getY() + 9.0f);
-  boltPath.lineTo(boltSquare.getX() + 10.0f, boltSquare.getY() + 9.0f);
-  boltPath.closeSubPath();
-  g.fillPath(boltPath);
+  {
+      static juce::Image banner = juce::ImageFileFormat::loadFrom(
+          juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("banner.jpg"));
+      if (banner.isValid())
+          g.drawImageWithin(banner, cardBanner1.getX(), cardBanner1.getY(), cardBanner1.getWidth(), cardBanner1.getHeight(),
+                            juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
+  }
 
-  g.setColour(colBass);
-  g.setFont(juce::Font("Geist", 15.0f, juce::Font::bold));
-  g.drawText("Ultra Rápido", boltIconArea.translated(8, 0),
-             juce::Justification::centredLeft);
+  // Card 2: Banner Image
+  g.setColour(juce::Colour::fromString("#FF1C1B1B"));
+  g.fillRoundedRectangle(cardBanner2.toFloat(), 12.0f);
+  if (hoveredCard == 2)
+      g.setColour(juce::Colour::fromString("#FF353534").brighter(0.3f));
+  else
+      g.setColour(juce::Colour::fromString("#FF353534"));
+  g.drawRoundedRectangle(cardBanner2.toFloat(), 12.0f, 1.0f);
 
-  g.setColour(juce::Colour::fromString("#FFC1C6D7"));
-  g.setFont(juce::Font("Geist", 12.0f, juce::Font::plain));
-  g.drawText("Tempo estimado: ~45 segundos para faixas de duração média.",
-             card2Text, juce::Justification::topLeft, true);
+  {
+      static juce::Image banner2 = juce::ImageFileFormat::loadFrom(
+          juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("banner2.jpg"));
+      if (banner2.isValid())
+          g.drawImageWithin(banner2, cardBanner2.getX(), cardBanner2.getY(), cardBanner2.getWidth(), cardBanner2.getHeight(),
+                            juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
+  }
 
   // Card 3: Recent Stems (Stems Recentes)
   g.setColour(juce::Colour::fromString("#FF1C1B1B"));
@@ -332,12 +309,12 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
   auto recentHeader = card3Text.removeFromTop(20);
 
   g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Geist", 13.0f, juce::Font::bold));
+  g.setFont(juce::Font("Segoe UI", 13.0f, juce::Font::bold));
   g.drawText("Stems Recentes", recentHeader, juce::Justification::centredLeft);
 
   // Draw "..." menu on the right
   g.setColour(juce::Colour::fromString("#FF8B90A0"));
-  g.setFont(juce::Font("Geist", 14.0f, juce::Font::bold));
+  g.setFont(juce::Font("Segoe UI", 14.0f, juce::Font::bold));
   g.drawText("...", recentHeader, juce::Justification::centredRight);
 
   card3Text.removeFromTop(8); // gap
@@ -358,7 +335,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
 
   // File name
   g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("JetBrains Mono", 10.0f, juce::Font::bold));
+  g.setFont(juce::Font("Consolas", 10.0f, juce::Font::bold));
   g.drawText("Midnight Echo.wav", fileBox.removeFromTop(16),
              juce::Justification::topLeft);
 
@@ -375,8 +352,8 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
   // por IA)
   auto bottomArea = area;
   g.setColour(juce::Colour::fromString("#FF8B90A0"));
-  g.setFont(juce::Font("JetBrains Mono", 11.0f, juce::Font::bold));
-  g.drawText("ARQUITETURA DE EXTRAÇÃO POR IA", bottomArea.removeFromTop(20),
+  g.setFont(juce::Font("Consolas", 11.0f, juce::Font::bold));
+  g.drawText(juce::CharPointer_UTF8("ARQUITETURA DE EXTRAÇÃO POR IA"), bottomArea.removeFromTop(20),
              juce::Justification::centredLeft);
 
   auto stemGrid = bottomArea.reduced(2);
@@ -401,7 +378,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
     boxText.removeFromLeft(4); // account for accent line
 
     g.setColour(juce::Colours::white);
-    g.setFont(juce::Font("Geist", 13.0f, juce::Font::bold));
+    g.setFont(juce::Font("Segoe UI", 13.0f, juce::Font::bold));
     g.drawText(stemNames[i], boxText.removeFromTop(16),
                juce::Justification::centredLeft);
 
@@ -430,7 +407,7 @@ void MainComponent::drawProcessingScreen(juce::Graphics &g) {
   area.removeFromTop(40);
 
   g.setColour(juce::Colour::fromString("#FF8B90A0"));
-  g.setFont(juce::Font("JetBrains Mono", 11.0f, juce::Font::bold));
+  g.setFont(juce::Font("Consolas", 11.0f, juce::Font::bold));
   g.drawText("NEURAL ENGINE ANALYSIS IN PROGRESS", area.removeFromTop(20),
              juce::Justification::centred);
 
@@ -450,16 +427,16 @@ void MainComponent::drawProcessingScreen(juce::Graphics &g) {
   auto statusArea = topRow.removeFromLeft(200);
 
   g.setColour(colDrums); // neon green
-  g.setFont(juce::Font("JetBrains Mono", 10.0f, juce::Font::bold));
+  g.setFont(juce::Font("Consolas", 10.0f, juce::Font::bold));
   g.drawText("STATUS", statusArea.removeFromTop(14),
              juce::Justification::bottomLeft);
   g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Geist", 18.0f, juce::Font::bold));
+  g.setFont(juce::Font("Segoe UI", 18.0f, juce::Font::bold));
   g.drawText("Extraction Active", statusArea, juce::Justification::topLeft);
 
   // Percentage
   g.setColour(colDrums);
-  g.setFont(juce::Font("Geist", 36.0f, juce::Font::bold));
+  g.setFont(juce::Font("Segoe UI", 36.0f, juce::Font::bold));
 
   // Read parsed percentage directly from persistent progressValue (normalized
   // 0.0 - 1.0)
@@ -569,7 +546,7 @@ void MainComponent::drawProcessingScreen(juce::Graphics &g) {
     itemText.removeFromTop(4); // gap after icon
 
     g.setColour(juce::Colour::fromString("#FF8B90A0"));
-    g.setFont(juce::Font("Geist", 11.0f, juce::Font::bold));
+    g.setFont(juce::Font("Segoe UI", 11.0f, juce::Font::bold));
     g.drawText(names[i], itemText.removeFromTop(14),
                juce::Justification::centredLeft);
 
@@ -605,12 +582,12 @@ void MainComponent::drawResultsScreen(juce::Graphics &g) {
   // Draw Title Header for results
   auto headerArea = bounds.removeFromTop(90);
   g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Geist", 20.0f, juce::Font::bold));
+  g.setFont(juce::Font("Segoe UI", 20.0f, juce::Font::bold));
   g.drawText("Stems Extraction Complete", headerArea.removeFromTop(30),
              juce::Justification::centredLeft);
 
   g.setColour(juce::Colour::fromString("#FF8B90A0"));
-  g.setFont(juce::Font("Geist", 13.0f, juce::Font::plain));
+  g.setFont(juce::Font("Segoe UI", 13.0f, juce::Font::plain));
   g.drawText("Track: " + inputFile.getFileName(), headerArea,
              juce::Justification::topLeft);
 
@@ -641,7 +618,7 @@ void MainComponent::drawResultsScreen(juce::Graphics &g) {
     // 4. Draw Stem Label
     auto labelArea = pBounds.reduced(12);
     g.setColour(player->colour);
-    g.setFont(juce::Font("JetBrains Mono", 10.0f, juce::Font::bold));
+    g.setFont(juce::Font("Consolas", 10.0f, juce::Font::bold));
     g.drawText(player->name.toUpperCase(), labelArea.removeFromTop(16),
                juce::Justification::topLeft);
 
@@ -846,7 +823,7 @@ void MainComponent::startProcessing(const juce::File &fileToProcess) {
         } else {
           juce::AlertWindow::showMessageBoxAsync(
               juce::AlertWindow::WarningIcon, "Erro de Processamento",
-              "A extração de stems falhou ou foi interrompida.");
+              juce::CharPointer_UTF8("A extração de stems falhou ou foi interrompida."));
           currentState = AppState::ScreenUpload;
           resized();
           repaint();
@@ -891,7 +868,7 @@ void MainComponent::timerCallback() {
     } else if (percent == 100) {
       statusText = "Concluindo processamento...";
     } else {
-      statusText = "Carregando áudio e inicializando engine de IA (Aguarde)...";
+      statusText = juce::CharPointer_UTF8("Carregando áudio e inicializando engine de IA (Aguarde)...");
     }
 
     progressLabel.setText(statusText, juce::dontSendNotification);
@@ -1129,4 +1106,37 @@ void MainComponent::exportAllAsZip() {
                      }
                     }
                   });
+}
+
+void MainComponent::mouseMove(const juce::MouseEvent& event)
+{
+    if (currentState != AppState::ScreenUpload) return;
+    int newHover = 0;
+    if (cardBanner1.contains(event.getPosition())) newHover = 1;
+    else if (cardBanner2.contains(event.getPosition())) newHover = 2;
+    if (newHover != hoveredCard)
+    {
+        hoveredCard = newHover;
+        setMouseCursor(newHover != 0 ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+        repaint();
+    }
+}
+
+void MainComponent::mouseUp(const juce::MouseEvent& event)
+{
+    if (currentState != AppState::ScreenUpload) return;
+    if (cardBanner1.contains(event.getPosition()))
+        juce::URL("http://tridjs.com.br").launchInDefaultBrowser();
+    else if (cardBanner2.contains(event.getPosition()))
+        juce::URL("https://www.youtube.com/@Tridjs").launchInDefaultBrowser();
+}
+
+void MainComponent::mouseExit(const juce::MouseEvent& event)
+{
+    if (hoveredCard != 0)
+    {
+        hoveredCard = 0;
+        setMouseCursor(juce::MouseCursor::NormalCursor);
+        repaint();
+    }
 }

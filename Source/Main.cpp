@@ -1,4 +1,4 @@
-#include <JuceHeader.h>
+﻿#include <JuceHeader.h>
 #include "MainComponent.h"
 #include "StemEngine.h"
 #include <algorithm>
@@ -279,12 +279,7 @@ public:
             
             setContentOwned (mainComp, true);
 
-           #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
-           #else
-            setResizable (true, true);
-            centreWithSize (getWidth(), getHeight());
-           #endif
 
             setVisible (false); // Oculto no boot, visível somente após o fade-out
         }
@@ -301,13 +296,13 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         // 1. Carrega o arquivo de splash (splash2.png)
-        juce::File splashFile("C:\\StemsTriDJs\\splash2.png");
+        juce::File splashFile("C:\\StemsTriDJs\\logo.png");
         if (!splashFile.existsAsFile())
-            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("resources").getChildFile("splash2.png");
+            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("resources").getChildFile("logo.png");
         if (!splashFile.existsAsFile())
-            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getChildFile("splash2.png");
+            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getChildFile("logo.png");
         if (!splashFile.existsAsFile())
-            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("splash2.png");
+            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("logo.png");
         
         juce::Image splashImg;
         if (splashFile.existsAsFile())
