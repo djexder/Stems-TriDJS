@@ -300,14 +300,14 @@ public:
 
     void initialise (const juce::String& commandLine) override
     {
-        // 1. Carrega o arquivo principal logo.png do TriDJs
-        juce::File splashFile("C:\\StemsTriDJs\\logo.png");
+        // 1. Carrega o arquivo de splash (splash2.png)
+        juce::File splashFile("C:\\StemsTriDJs\\splash2.png");
         if (!splashFile.existsAsFile())
-            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("resources").getChildFile("logo.png");
+            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("resources").getChildFile("splash2.png");
         if (!splashFile.existsAsFile())
-            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getChildFile("logo.png");
+            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getChildFile("splash2.png");
         if (!splashFile.existsAsFile())
-            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("logo.png");
+            splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("splash2.png");
         
         juce::Image splashImg;
         if (splashFile.existsAsFile())
@@ -316,8 +316,14 @@ public:
         }
         else
         {
-            // Fallback amigável para splash.png caso logo.png não esteja na pasta
-            juce::File fallbackFile("C:\\StemsTriDJs\\splash.png");
+            // Fallback para logo.png caso splash2.png não exista
+            juce::File fallbackFile("C:\\StemsTriDJs\\logo.png");
+            if (!fallbackFile.existsAsFile())
+                fallbackFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("resources").getChildFile("logo.png");
+            if (!fallbackFile.existsAsFile())
+                fallbackFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getChildFile("logo.png");
+            if (!fallbackFile.existsAsFile())
+                fallbackFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("logo.png");
             if (fallbackFile.existsAsFile())
                 splashImg = juce::ImageFileFormat::loadFrom(fallbackFile);
         }

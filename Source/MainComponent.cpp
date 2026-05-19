@@ -17,14 +17,14 @@ MainComponent::MainComponent() {
   setSize(800, 600);
 
   // Load Splash Screen Image
-  juce::File splashFile("C:\\StemsTriDJs\\splash.png");
+  juce::File splashFile("C:\\StemsTriDJs\\splash2.png");
   if (!splashFile.existsAsFile())
     splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile)
                      .getSiblingFile("resources")
-                     .getChildFile("splash.png");
+                     .getChildFile("splash2.png");
   if (!splashFile.existsAsFile())
     splashFile = juce::File::getSpecialLocation(juce::File::currentExecutableFile)
-                     .getSiblingFile("splash.png");
+                     .getSiblingFile("splash2.png");
 
   if (splashFile.existsAsFile())
     splashImage = juce::ImageFileFormat::loadFrom(splashFile);
