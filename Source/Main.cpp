@@ -1,4 +1,4 @@
-﻿#include <JuceHeader.h>
+#include <JuceHeader.h>
 #include "MainComponent.h"
 #include "StemEngine.h"
 #include <algorithm>
@@ -8,7 +8,7 @@ class TriDJsStemsApplication  : public juce::JUCEApplication
 public:
     TriDJsStemsApplication() {}
 
-    const juce::String getApplicationName() override       { return "TriDJs_Separador_Stems"; }
+    const juce::String getApplicationName() override       { return "TriDJs Stems"; }
     const juce::String getApplicationVersion() override    { return "1.0.0"; }
     bool moreThanOneInstanceAllowed() override             { return true; }
 
@@ -21,8 +21,8 @@ public:
               splashImage (image)
         {
             setUsingNativeTitleBar (false);
-            setSize (500, 500);
-            centreWithSize (500, 500);
+            setSize (350, 500);
+            centreWithSize (350, 500);
             
             // Inicia totalmente transparente para fazer o fade-in cinematográfico
             setAlpha (0.0f);
@@ -46,7 +46,7 @@ public:
             // 2. Desenha o logotipo centralizado na metade superior
             if (splashImage.isValid())
             {
-                g.drawImageWithin (splashImage, 0, 15, 500, 270, 
+                g.drawImageWithin (splashImage, 0, 15, getWidth(), 270, 
                                    juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
             }
 
@@ -248,7 +248,8 @@ public:
                               juce::Colours::darkgrey,
                               DocumentWindow::allButtons)
         {
-            setUsingNativeTitleBar (true);
+            setUsingNativeTitleBar (false);
+            setTitleBarTextCentred (false);
             
             // Define o ícone da janela usando logo.png
             juce::File iconFile("C:\\StemsTriDJs\\logo.png");
@@ -279,7 +280,9 @@ public:
             
             setContentOwned (mainComp, true);
 
-            setFullScreen (true);
+            setResizable (true, true);
+            auto area = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
+            setBounds (area);
 
             setVisible (false); // Oculto no boot, visível somente após o fade-out
         }
@@ -287,6 +290,23 @@ public:
         void closeButtonPressed() override
         {
             JUCEApplication::getInstance()->systemRequestedQuit();
+        }
+
+        void maximiseButtonPressed() override
+        {
+            auto area = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->userArea;
+            auto current = getBounds();
+
+            // Se já está ocupando a tela cheia → restaura para um tamanho menor
+            if (current.getWidth() >= area.getWidth() && current.getHeight() >= area.getHeight())
+            {
+                auto restored = area.reduced (area.getWidth() / 10, area.getHeight() / 8);
+                setBounds (restored);
+            }
+            else
+            {
+                setBounds (area);
+            }
         }
 
     private:

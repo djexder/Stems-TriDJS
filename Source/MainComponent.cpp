@@ -1,4 +1,4 @@
-﻿#include "MainComponent.h"
+#include "MainComponent.h"
 #include "StemEngine.h"
 
 // Define styling colors based on HTML neon theme
@@ -253,7 +253,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
 
   g.setColour(juce::Colour::fromString("#FF8B90A0"));
   g.setFont(juce::Font("Consolas", 11.0f, juce::Font::plain));
-  g.drawText(juce::CharPointer_UTF8("MP3, WAV ou FLAC até 50MB"),
+  g.drawText(juce::CharPointer_UTF8("MP3 ou WAV até 50MB"),
              leftCard.withY(leftCard.getCentreY() + 20).withHeight(20),
              juce::Justification::centred);
 
@@ -678,13 +678,14 @@ void MainComponent::resized() {
     cancelBtn.setVisible(false);
 
     // Bento grid sizes
+    bounds.removeFromTop(90); // Matches the Title Area removal in paint()
     auto bentoArea = bounds.removeFromTop(bounds.getHeight() - 110);
     auto leftBentoWidth = (bentoArea.getWidth() * 7) / 10;
     auto leftCard = bentoArea.removeFromLeft(leftBentoWidth).reduced(8);
 
     // Position select file button perfectly inside upload card
     selectFileBtn.setBounds(leftCard.getCentreX() - 80,
-                            leftCard.getCentreY() + 50, 160, 40);
+                            leftCard.getCentreY() + 70, 160, 40);
     selectFileBtn.setColour(juce::TextButton::textColourOffId, colPrimary);
   } else if (currentState == AppState::ScreenProcessing) {
     selectFileBtn.setVisible(false);
