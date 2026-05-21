@@ -1,4 +1,4 @@
-#include "MainComponent.h"
+﻿#include "MainComponent.h"
 #include "StemEngine.h"
 
 // Define styling colors based on HTML neon theme
@@ -49,11 +49,8 @@ MainComponent::MainComponent() {
 
   addChildComponent(cancelBtn);
   cancelBtn.onClick = [this] {
-    if (engineWorker != nullptr) {
+    if (engineWorker != nullptr)
       engineWorker->signalThreadShouldExit();
-      engineWorker->waitForThreadToExit(2000);
-      engineWorker.reset();
-    }
     currentState = AppState::ScreenUpload;
     resized();
     repaint();
@@ -97,6 +94,13 @@ MainComponent::MainComponent() {
 
   setupTempDirectory();
 
+  // Inicia o UpdateChecker silenciosamente em background
+  updateChecker = std::make_unique<UpdateChecker>();
+  updateChecker->onCheckComplete = [this] {
+      repaint();
+  };
+  updateChecker->startCheck();
+
   // Inicia o Timer para atualizar animações da interface gráfica
   startTimer(30);
 }
@@ -121,6 +125,7 @@ void MainComponent::startWarmup() {
 
 MainComponent::~MainComponent() {
   setLookAndFeel(nullptr);
+  updateChecker.reset();
   sourcePlayer.setSource(nullptr);
   deviceManager.removeAudioCallback(&sourcePlayer);
 
@@ -299,54 +304,99 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
                             juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
   }
 
-  // Card 3: Recent Stems (Stems Recentes)
+  // Card 3: Status de Atualização
   g.setColour(juce::Colour::fromString("#FF1C1B1B"));
   g.fillRoundedRectangle(card3.toFloat(), 12.0f);
   g.setColour(juce::Colour::fromString("#FF353534"));
   g.drawRoundedRectangle(card3.toFloat(), 12.0f, 1.0f);
 
+  card3Bounds = card3;
+  downloadBtnBounds = {};
+
   auto card3Text = card3.reduced(16);
-  auto recentHeader = card3Text.removeFromTop(20);
 
-  g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Segoe UI", 13.0f, juce::Font::bold));
-  g.drawText("Stems Recentes", recentHeader, juce::Justification::centredLeft);
+  if (updateChecker != nullptr)
+  {
+      auto status = updateChecker->getStatus();
 
-  // Draw "..." menu on the right
-  g.setColour(juce::Colour::fromString("#FF8B90A0"));
-  g.setFont(juce::Font("Segoe UI", 14.0f, juce::Font::bold));
-  g.drawText("...", recentHeader, juce::Justification::centredRight);
+      if (status == UpdateChecker::Status::Checking)
+      {
+          g.setColour(juce::Colour::fromString("#FF8B90A0"));
+          g.setFont(juce::Font("Segoe UI", 13.0f, juce::Font::plain));
+          g.drawText(juce::CharPointer_UTF8("Verificando atualizações..."), card3Text, juce::Justification::centred);
+      }
+      else if (status == UpdateChecker::Status::UpToDate)
+      {
+          g.setColour(juce::Colour::fromString("#FF01F5A0"));
+          g.setFont(juce::Font("Segoe UI", 20.0f, juce::Font::bold));
+          g.drawText(juce::CharPointer_UTF8("\xe2\x9c\x93"), card3Text.removeFromTop(32), juce::Justification::centred);
 
-  card3Text.removeFromTop(8); // gap
+          g.setColour(juce::Colours::white);
+          g.setFont(juce::Font("Segoe UI", 14.0f, juce::Font::bold));
+          g.drawText(juce::CharPointer_UTF8("Voc\xc3\xaa est\xc3\xa1 na vers\xc3\xa3o mais recente"),
+                     card3Text.removeFromTop(22), juce::Justification::centred);
 
-  // Draw file preview box
-  auto fileBox = card3Text.removeFromTop(40);
+          g.setColour(juce::Colour::fromString("#FF8B90A0"));
+          g.setFont(juce::Font("Consolas", 11.0f, juce::Font::plain));
+          g.drawText("v" + updateChecker->getCurrentVersion(),
+                     card3Text, juce::Justification::centred);
+      }
+      else if (status == UpdateChecker::Status::UpdateAvailable)
+      {
+          auto& info = updateChecker->getVersionInfo();
 
-  // Draw a tiny vinyl disc preview
-  auto discArea = fileBox.removeFromLeft(32).withSizeKeepingCentre(24, 24);
-  g.setColour(juce::Colour::fromString("#FF2A2A2A"));
-  g.fillEllipse(discArea.toFloat());
-  g.setColour(colVocals.withAlpha(0.6f));
-  g.drawEllipse(discArea.toFloat().reduced(2.0f), 1.5f);
-  g.setColour(juce::Colours::black);
-  g.fillEllipse(discArea.toFloat().reduced(8.0f));
+          // Linha do topo: aviso à esquerda, botão à direita
+          auto headerRow = card3Text.removeFromTop(30);
+          auto headerLabelArea = headerRow.removeFromLeft(headerRow.getWidth() - 140);
+          auto btnArea = headerRow.reduced(0, 3);
 
-  fileBox.removeFromLeft(8); // gap
+          g.setColour(juce::Colour::fromString("#FFFFB4AB"));
+          g.setFont(juce::Font("Segoe UI", 15.0f, juce::Font::bold));
+          g.drawText(juce::CharPointer_UTF8("\xe2\x9a\xa0 Atualiza\xc3\xa7\xc3\xa3o dispon\xc3\xadvel"),
+                     headerLabelArea, juce::Justification::centredLeft);
 
-  // File name
-  g.setColour(juce::Colours::white);
-  g.setFont(juce::Font("Consolas", 10.0f, juce::Font::bold));
-  g.drawText("Midnight Echo.wav", fileBox.removeFromTop(16),
-             juce::Justification::topLeft);
+          if (hoveredDownloadBtn)
+              g.setColour(juce::Colour::fromString("#FF01F5A0"));
+          else
+              g.setColour(juce::Colour::fromString("#FF1C8B5A"));
+          g.fillRoundedRectangle(btnArea.toFloat(), 6.0f);
 
-  // Prefilled progress bar (80%)
-  auto miniBar = fileBox.reduced(0, 4);
-  g.setColour(juce::Colour::fromString("#FF201F1F"));
-  g.fillRoundedRectangle(miniBar.toFloat(), 3.0f);
+          g.setColour(juce::Colour::fromString("#FF002111"));
+          g.setFont(juce::Font("Segoe UI", 11.0f, juce::Font::bold));
+          g.drawText("Download", btnArea, juce::Justification::centred);
 
-  auto miniBarFill = miniBar.withWidth((int)(miniBar.getWidth() * 0.8f));
-  g.setColour(colDrums);
-  g.fillRoundedRectangle(miniBarFill.toFloat(), 3.0f);
+          downloadBtnBounds = btnArea;
+
+          // Versão atual e nova
+          g.setColour(juce::Colour::fromString("#FF8B90A0"));
+          g.setFont(juce::Font("Consolas", 11.0f, juce::Font::plain));
+          g.drawText(juce::String::fromUTF8("Vers\xc3\xa3o atual: v") + updateChecker->getCurrentVersion(),
+                     card3Text.removeFromTop(18), juce::Justification::centredLeft);
+          g.drawText(juce::String::fromUTF8("Nova vers\xc3\xa3o: v") + info.latestVersion,
+                     card3Text.removeFromTop(18), juce::Justification::centredLeft);
+
+          // Data
+          if (info.updateDate.isNotEmpty())
+          {
+              g.setColour(juce::Colour::fromString("#FFC1C6D7"));
+              g.setFont(juce::Font("Segoe UI", 11.0f, juce::Font::plain));
+              g.drawText(juce::String("Data: ") + info.updateDate,
+                         card3Text.removeFromTop(18), juce::Justification::centredLeft);
+          }
+
+          // Changelog (máximo 2 itens)
+          if (info.changelog.size() > 0)
+          {
+              g.setColour(juce::Colour::fromString("#FFC1C6D7"));
+              g.setFont(juce::Font("Segoe UI", 10.0f, juce::Font::plain));
+
+              int maxItems = juce::jmin(info.changelog.size(), 2);
+              for (int i = 0; i < maxItems; ++i)
+                  g.drawText(juce::String::fromUTF8("\xe2\x80\xa2 ") + info.changelog[i],
+                             card3Text.removeFromTop(16), juce::Justification::centredLeft);
+          }
+      }
+  }
 
   // 3. Draw Bottom Section: AI Extraction Architecture (Arquitetura de Extração
   // por IA)
@@ -809,10 +859,11 @@ void MainComponent::startProcessing(const juce::File &fileToProcess) {
   resized();
   repaint();
 
-  // Parar qualquer thread em background ativa antes de iniciar
+  // Limpar worker anterior (se já tiver finalizado)
   if (engineWorker != nullptr) {
     engineWorker->signalThreadShouldExit();
-    engineWorker->waitForThreadToExit(2000);
+    if (engineWorker->isThreadRunning())
+        engineWorker->waitForThreadToExit(2000);
     engineWorker.reset();
   }
 
@@ -845,6 +896,11 @@ void MainComponent::startProcessing(const juce::File &fileToProcess) {
 }
 
 void MainComponent::timerCallback() {
+  if (engineWorker != nullptr && engineWorker->threadShouldExit() && !engineWorker->isThreadRunning())
+  {
+      engineWorker.reset();
+  }
+
   if (currentState == AppState::ScreenProcessing) {
     // Smoothly interpolate progressValue towards targetProgressValue
     if (progressValue < targetProgressValue) {
@@ -955,14 +1011,14 @@ void MainComponent::setupStemPlayer(StemPlayer &player,
 
   addChildComponent(player.playBtn);
   player.playBtn.setButtonText(
-      juce::CharPointer_UTF8("\xe2\x96\xb6")); // ▶ Play
+      juce::CharPointer_UTF8("\xe2\x96\xb6")); // \xe2\x96\xb6 Play
   player.playBtn.setColour(juce::TextButton::buttonColourId, colSurface);
   player.playBtn.setColour(juce::TextButton::textColourOffId, colour);
   player.playBtn.onClick = [this, &player] { togglePlayPause(player); };
 
   addChildComponent(player.stopBtn);
   player.stopBtn.setButtonText(
-      juce::CharPointer_UTF8("\xe2\x96\xa0")); // ■ Stop
+      juce::CharPointer_UTF8("\xe2\x96\xa0")); // \xe2\x96\xa0 Stop
   player.stopBtn.setColour(juce::TextButton::buttonColourId, colSurface);
   player.stopBtn.setColour(juce::TextButton::textColourOffId,
                            juce::Colour::fromString("#FF8B90A0"));
@@ -975,7 +1031,7 @@ void MainComponent::setupStemPlayer(StemPlayer &player,
 
   addChildComponent(player.downloadBtn);
   player.downloadBtn.setButtonText(
-      juce::CharPointer_UTF8("\xe2\x86\x93")); // ↓ Download
+      juce::CharPointer_UTF8("\xe2\x86\x93")); // \xe2\x86\x93 Download
   player.downloadBtn.setColour(juce::TextButton::buttonColourId, colSurface);
   player.downloadBtn.setColour(juce::TextButton::textColourOffId,
                                juce::Colours::white);
@@ -1010,7 +1066,7 @@ void MainComponent::togglePlayPause(StemPlayer &player) {
   if (player.transportSource.isPlaying()) {
     player.transportSource.stop();
     player.playBtn.setButtonText(
-        juce::CharPointer_UTF8("\xe2\x96\xb6")); // ▶ Play
+        juce::CharPointer_UTF8("\xe2\x96\xb6")); // \xe2\x96\xb6 Play
   } else {
     // Perfect sync: start at the exact current position of any other active
     // player
@@ -1024,7 +1080,7 @@ void MainComponent::togglePlayPause(StemPlayer &player) {
     player.transportSource.setPosition(syncPos);
     player.transportSource.start();
     player.playBtn.setButtonText(
-        juce::CharPointer_UTF8("\xe2\x8f\xb8")); // ⏸ Pause
+        juce::CharPointer_UTF8("\xe2\x8f\xb8")); // \xe2\x8f\xb8 Pause
   }
 }
 
@@ -1041,13 +1097,13 @@ void MainComponent::toggleAllPlayPause() {
     if (anyPlaying) {
       player->transportSource.stop();
       player->playBtn.setButtonText(
-          juce::CharPointer_UTF8("\xe2\x96\xb6")); // ▶ Play
+          juce::CharPointer_UTF8("\xe2\x96\xb6")); // \xe2\x96\xb6 Play
     } else {
       // Sync all playing states
       player->transportSource.setPosition(0.0);
       player->transportSource.start();
       player->playBtn.setButtonText(
-          juce::CharPointer_UTF8("\xe2\x8f\xb8")); // ⏸ Pause
+          juce::CharPointer_UTF8("\xe2\x8f\xb8")); // \xe2\x8f\xb8 Pause
     }
   }
 }
@@ -1115,10 +1171,14 @@ void MainComponent::mouseMove(const juce::MouseEvent& event)
     int newHover = 0;
     if (cardBanner1.contains(event.getPosition())) newHover = 1;
     else if (cardBanner2.contains(event.getPosition())) newHover = 2;
-    if (newHover != hoveredCard)
+
+    bool newDownloadHover = downloadBtnBounds.contains(event.getPosition());
+
+    if (newHover != hoveredCard || newDownloadHover != hoveredDownloadBtn)
     {
         hoveredCard = newHover;
-        setMouseCursor(newHover != 0 ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
+        hoveredDownloadBtn = newDownloadHover;
+        setMouseCursor((newHover != 0 || newDownloadHover) ? juce::MouseCursor::PointingHandCursor : juce::MouseCursor::NormalCursor);
         repaint();
     }
 }
@@ -1130,13 +1190,17 @@ void MainComponent::mouseUp(const juce::MouseEvent& event)
         juce::URL("http://tridjs.com.br").launchInDefaultBrowser();
     else if (cardBanner2.contains(event.getPosition()))
         juce::URL("https://www.youtube.com/@Tridjs").launchInDefaultBrowser();
+    else if (downloadBtnBounds.contains(event.getPosition()) && updateChecker != nullptr
+             && updateChecker->getStatus() == UpdateChecker::Status::UpdateAvailable)
+        juce::URL(updateChecker->getVersionInfo().downloadUrl).launchInDefaultBrowser();
 }
 
 void MainComponent::mouseExit(const juce::MouseEvent& event)
 {
-    if (hoveredCard != 0)
+    if (hoveredCard != 0 || hoveredDownloadBtn)
     {
         hoveredCard = 0;
+        hoveredDownloadBtn = false;
         setMouseCursor(juce::MouseCursor::NormalCursor);
         repaint();
     }

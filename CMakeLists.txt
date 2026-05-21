@@ -31,6 +31,8 @@ target_sources(TriDJs_Separador_Stems PRIVATE
     Source/MainComponent.h
     Source/StemEngine.cpp
     Source/StemEngine.h
+    Source/UpdateChecker.cpp
+    Source/UpdateChecker.h
 )
 
 target_compile_options(TriDJs_Separador_Stems PRIVATE "${TORCH_CXX_FLAGS}" "/utf-8")

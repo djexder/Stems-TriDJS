@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "StemEngine.h"
+#include "UpdateChecker.h"
 #include <functional>
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
@@ -125,14 +126,41 @@ public:
             return;
         }
 
-        // Circular Icon formatting (use bold centered icons)
+        // Circular Icon formatting (draw vector paths for reliability)
         bool isCircular = (std::abs(button.getWidth() - button.getHeight()) < 5);
         if (isCircular)
         {
-            g.setFont (juce::Font ("Segoe UI", 18.0f, juce::Font::bold));
             auto accentCol = button.findColour(juce::TextButton::textColourOffId);
-            g.setColour (shouldDrawButtonAsPressed ? accentCol.brighter(0.2f) : accentCol);
-            g.drawText (txt, button.getLocalBounds().withY(button.getLocalBounds().getY() - 1), juce::Justification::centred);
+            g.setColour(shouldDrawButtonAsPressed ? accentCol.brighter(0.2f) : accentCol);
+
+            auto b = button.getLocalBounds().toFloat().reduced(11);
+            juce::Path p;
+
+            if (txt == juce::String::fromUTF8("\xe2\x96\xb6"))
+            {
+                p.addTriangle(b.getX(), b.getY(), b.getX(), b.getBottom(), b.getRight(), b.getCentreY());
+                g.fillPath(p);
+            }
+            else if (txt == juce::String::fromUTF8("\xe2\x8f\xb8"))
+            {
+                float barW = b.getWidth() / 3.5f;
+                g.fillRoundedRectangle(b.getX(), b.getY(), barW, b.getHeight(), 1.5f);
+                g.fillRoundedRectangle(b.getRight() - barW, b.getY(), barW, b.getHeight(), 1.5f);
+            }
+            else if (txt == juce::String::fromUTF8("\xe2\x96\xa0"))
+            {
+                g.fillRoundedRectangle(b.reduced(2), 2.0f);
+            }
+            else if (txt == juce::String::fromUTF8("\xe2\x86\x93"))
+            {
+                auto cx = b.getCentreX();
+                auto cy = b.getCentreY();
+                float head = b.getWidth() * 0.35f;
+                g.drawLine(cx, b.getY(), cx, cy + head * 0.3f, 2.5f);
+                p.addTriangle(cx - head, cy, cx + head, cy, cx, cy + head);
+                g.fillPath(p);
+            }
+
             return;
         }
 
@@ -321,10 +349,14 @@ private:
     void mouseExit(const juce::MouseEvent& event) override;
 
     CustomLookAndFeel customLookAndFeel;
+    std::unique_ptr<UpdateChecker> updateChecker;
 
 private:
     juce::Rectangle<int> cardBanner1, cardBanner2;
+    juce::Rectangle<int> card3Bounds;
+    juce::Rectangle<int> downloadBtnBounds;
     int hoveredCard = 0; // 0 = none, 1 = banner1, 2 = banner2
+    bool hoveredDownloadBtn = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
