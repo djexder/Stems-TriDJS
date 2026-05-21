@@ -1,4 +1,4 @@
-﻿#include "MainComponent.h"
+#include "MainComponent.h"
 #include "StemEngine.h"
 
 // Define styling colors based on HTML neon theme
@@ -94,6 +94,10 @@ MainComponent::MainComponent() {
 
   setupTempDirectory();
 
+  // Menu bar
+  menuBar.setModel(this);
+  addAndMakeVisible(menuBar);
+
   // Inicia o UpdateChecker silenciosamente em background
   updateChecker = std::make_unique<UpdateChecker>();
   updateChecker->onCheckComplete = [this] {
@@ -175,13 +179,14 @@ void MainComponent::paint(juce::Graphics &g) {
   }
 
   // Top Header
+  int topY = menuBarHeight + 16;
   g.setColour(colPrimary);
   g.setFont(juce::Font(24.0f, juce::Font::bold));
-  g.drawText("TriDJs Stems", 24, 16, 200, 40, juce::Justification::centredLeft);
+  g.drawText("TriDJs Stems", 24, topY, 200, 40, juce::Justification::centredLeft);
 
   // Separator line
   g.setColour(colSurface);
-  g.drawLine(0.0f, 70.0f, (float)getWidth(), 70.0f, 1.0f);
+  g.drawLine(0.0f, (float)(topY + 54), (float)getWidth(), (float)(topY + 54), 1.0f);
 
   switch (currentState) {
   case AppState::ScreenUpload:
@@ -200,7 +205,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
   auto area = getLocalBounds().reduced(24);
 
   // Top App Bar has 60px height
-  area.removeFromTop(60);
+  area.removeFromTop(60 + menuBarHeight);
 
   // 1. Draw Title Area
   auto titleArea = area.removeFromTop(90);
@@ -450,7 +455,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
 
 void MainComponent::drawProcessingScreen(juce::Graphics &g) {
   auto area = getLocalBounds().reduced(24);
-  area.removeFromTop(60);
+  area.removeFromTop(60 + menuBarHeight);
 
   // 1. Titles (Handled dynamically by progressLabel now, but we still advance
   // layout area)
@@ -627,7 +632,7 @@ void MainComponent::drawProcessingScreen(juce::Graphics &g) {
 
 void MainComponent::drawResultsScreen(juce::Graphics &g) {
   auto bounds = getLocalBounds().reduced(24);
-  bounds.removeFromTop(60);
+  bounds.removeFromTop(60 + menuBarHeight);
 
   // Draw Title Header for results
   auto headerArea = bounds.removeFromTop(90);
@@ -709,8 +714,11 @@ void MainComponent::drawResultsScreen(juce::Graphics &g) {
 }
 
 void MainComponent::resized() {
+  menuBarHeight = 24;
+  menuBar.setBounds(0, 0, getWidth(), menuBarHeight);
+
   auto bounds = getLocalBounds().reduced(24);
-  bounds.removeFromTop(60);
+  bounds.removeFromTop(60 + menuBarHeight);
 
   if (currentState == AppState::ScreenSplash) {
     selectFileBtn.setVisible(false);
@@ -743,7 +751,7 @@ void MainComponent::resized() {
     clearBtn.setVisible(false);
 
     auto area = getLocalBounds().reduced(24);
-    area.removeFromTop(60);
+    area.removeFromTop(60 + menuBarHeight);
 
     // Position progressLabel at the title area
     auto titleArea = area.removeFromTop(40);
@@ -1203,5 +1211,113 @@ void MainComponent::mouseExit(const juce::MouseEvent& event)
         hoveredDownloadBtn = false;
         setMouseCursor(juce::MouseCursor::NormalCursor);
         repaint();
+    }
+}
+
+//==============================================================================
+juce::StringArray MainComponent::getMenuBarNames()
+{
+    return { "Arquivo", "Sobre" };
+}
+
+juce::PopupMenu MainComponent::getMenuForIndex(int, const juce::String& menuName)
+{
+    juce::PopupMenu menu;
+
+    if (menuName == "Arquivo")
+    {
+        menu.addItem(1001, "Carregar", true, false);
+        menu.addSeparator();
+        menu.addItem(1002, "Sair", true, false);
+    }
+    else if (menuName == "Sobre")
+    {
+        menu.addItem(2001, "Sobre", true, false);
+    }
+
+    return menu;
+}
+
+void MainComponent::menuItemSelected(int menuItemID, int)
+{
+    if (menuItemID == 1001)
+    {
+        openFileChooser();
+    }
+    else if (menuItemID == 1002)
+    {
+        juce::JUCEApplication::getInstance()->systemRequestedQuit();
+    }
+    else if (menuItemID == 2001)
+    {
+        auto ver = updateChecker != nullptr ? updateChecker->getCurrentVersion() : "1.0.0";
+
+        juce::String aboutText =
+            "TriDJs Stems Suite v" + ver + "\n\n"
+            + juce::String(juce::CharPointer_UTF8(
+            "O TRIDJS STEMS \xc3\xa9 um coletivo musical criado para apoiar m\xc3\xbasicos, DJs, produtores e artistas independentes atrav\xc3\xa9s de ideias, tecnologia, criatividade e novas tend\xc3\xaancias.\n\n"
+            "Acreditamos que a tecnologia pode abrir caminhos para novas formas de cria\xc3\xa7\xc3\xa3o musical. Hoje, ferramentas de IA conseguem realizar separa\xc3\xa7\xc3\xb5" "es de stems, identificar elementos sonoros e facilitar processos t\xc3\xa9" "cnicos que antes levavam horas. Mas para n\xc3\xb3s, isso \xc3\xa9 apenas o come\xc3\xa7o.\n\n"
+            "O que realmente importa acontece dali para frente: a imagina\xc3\xa7\xc3\xa3o humana.\n\n"
+            "\xc3\x89 o ser humano que transforma essas possibilidades em algo novo. Misturar conceitos, criar mashups, experimentar estilos, reconstruir m\xc3\xbasicas, criar novas atmosferas e desenvolver sons \xc3\xbanicos \xe2\x80\x94 isso nunca ser\xc3\xa1 substitu\xc3\xad" "do por uma m\xc3\xa1quina.\n\n"
+            "No TRIDJS STEMS, usamos a tecnologia como meio para potencializar a criatividade. Ela n\xc3\xa3o substitui o talento humano, ela facilita processos, conecta ideias e ajuda artistas a explorarem possibilidades que antes pareciam imposs\xc3\xadveis.\n\n"
+            "Nosso objetivo \xc3\xa9 unir m\xc3\xbasica, inova\xc3\xa7\xc3\xa3o e colabora\xc3\xa7\xc3\xa3o para incentivar novas experi\xc3\xaancias sonoras e fortalecer a cultura criativa. Porque acreditamos que o futuro da m\xc3\xbasica n\xc3\xa3o est\xc3\xa1 apenas na tecnologia, mas na capacidade humana de usar essas ferramentas para criar algo original, emocional e verdadeiro.\n\n"
+            "TRIDJS STEMS \xe2\x80\x94 transformando tecnologia em criatividade sonora."));
+
+        class AboutPanel : public juce::Component
+        {
+        public:
+            AboutPanel(const juce::String& body)
+            {
+                editor.setMultiLine(true, true);
+                editor.setReadOnly(true);
+                editor.setScrollbarsShown(true);
+                editor.setCaretVisible(false);
+                editor.setColour(juce::TextEditor::backgroundColourId, juce::Colour::fromString("#FF0D0D0D"));
+                editor.setColour(juce::TextEditor::textColourId, juce::Colour::fromString("#FFE0E0E0"));
+                editor.setColour(juce::TextEditor::outlineColourId, juce::Colour::fromString("#FF2A2A2A"));
+                editor.setColour(juce::TextEditor::focusedOutlineColourId, juce::Colour::fromString("#FF2A2A2A"));
+                editor.setColour(juce::ScrollBar::thumbColourId, juce::Colour::fromString("#FF3A3A3A"));
+                editor.setColour(juce::ScrollBar::trackColourId, juce::Colour::fromString("#FF1A1A1A"));
+                editor.setFont(juce::Font("Segoe UI", 14.0f, juce::Font::plain));
+                editor.setText(body, false);
+                addAndMakeVisible(editor);
+
+                okButton.setButtonText("OK");
+                okButton.setColour(juce::TextButton::buttonColourId, juce::Colour::fromString("#FF2A2A2A"));
+                okButton.setColour(juce::TextButton::buttonOnColourId, juce::Colour::fromString("#FF3A3A3A"));
+                okButton.setColour(juce::TextButton::textColourOffId, juce::Colour::fromString("#FFE0E0E0"));
+                okButton.onClick = [this] { closeWindow(); };
+                addAndMakeVisible(okButton);
+            }
+
+            void resized() override
+            {
+                auto r = getLocalBounds().reduced(10);
+                okButton.setBounds(r.removeFromBottom(30).withSizeKeepingCentre(100, 24));
+                r.removeFromBottom(6);
+                editor.setBounds(r);
+            }
+
+        private:
+            juce::TextEditor editor;
+            juce::TextButton okButton;
+
+            void closeWindow()
+            {
+                if (auto* w = findParentComponentOfClass<juce::DocumentWindow>())
+                    w->exitModalState(0);
+            }
+        };
+
+        auto* panel = new AboutPanel(aboutText);
+        panel->setSize(400, 400);
+        juce::DialogWindow::LaunchOptions o;
+        o.dialogTitle = "Sobre o TriDJs Stems";
+        o.dialogBackgroundColour = juce::Colour::fromString("#FF0D0D0D");
+        o.content.setOwned(panel);
+        o.componentToCentreAround = this;
+        o.useNativeTitleBar = true;
+        o.resizable = false;
+        o.launchAsync();
     }
 }

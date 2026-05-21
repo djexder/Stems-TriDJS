@@ -186,6 +186,64 @@ public:
                        sliderPos, bounds.getY() + 6.0f);
         g.fillPath (p);
     }
+
+    void drawMenuBarBackground (juce::Graphics& g, int width, int height,
+                                bool, juce::MenuBarComponent&) override
+    {
+        g.setColour (juce::Colour::fromString("#FF1C1B1B"));
+        g.fillRect (0, 0, width, height);
+        g.setColour (juce::Colour::fromString("#FF353534"));
+        g.drawLine (0.0f, (float)(height - 1), (float)width, (float)(height - 1), 1.0f);
+    }
+
+    void drawMenuBarItem (juce::Graphics& g, int width, int height,
+                          int, const juce::String& itemText,
+                          bool isMouseOverItem, bool isMenuOpen,
+                          bool, juce::MenuBarComponent&) override
+    {
+        if (isMouseOverItem || isMenuOpen)
+        {
+            g.setColour (juce::Colour::fromString("#FF353534"));
+            g.fillRect (0, 0, width, height);
+        }
+
+        g.setColour (juce::Colours::white);
+        g.setFont (juce::Font ("Segoe UI", 13.0f, juce::Font::plain));
+        g.drawText (itemText, 6, 0, width - 6, height, juce::Justification::centredLeft);
+    }
+
+    void drawPopupMenuBackground (juce::Graphics& g, int width, int height) override
+    {
+        g.setColour (juce::Colour::fromString("#FF252525"));
+        g.fillRect (0, 0, width, height);
+        g.setColour (juce::Colour::fromString("#FF353534"));
+        g.drawRect (0, 0, width, height, 1);
+    }
+
+    void drawPopupMenuItem (juce::Graphics& g, const juce::Rectangle<int>& area,
+                            bool isSeparator, bool isActive, bool isHighlighted,
+                            bool isTicked, bool hasSubMenu, const juce::String& text,
+                            const juce::String& shortcutKeyText,
+                            const juce::Drawable* icon, const juce::Colour* textColour) override
+    {
+        if (isHighlighted && isActive)
+        {
+            g.setColour (juce::Colour::fromString("#FF353534"));
+            g.fillRect (area);
+        }
+
+        if (!isSeparator)
+        {
+            g.setColour (isActive ? juce::Colours::white : juce::Colour::fromString("#FF8B90A0"));
+            g.setFont (juce::Font ("Segoe UI", 13.0f, juce::Font::plain));
+            g.drawText (text, area.reduced (4, 0), juce::Justification::centredLeft);
+        }
+        else
+        {
+            g.setColour (juce::Colour::fromString("#FF353534"));
+            g.fillRect (area.reduced (4, 0).withHeight (1));
+        }
+    }
 };
 
 class StemEngineWorker : public juce::Thread
@@ -245,7 +303,8 @@ private:
 
 class MainComponent  : public juce::Component,
                        public juce::FileDragAndDropTarget,
-                       public juce::Timer
+                       public juce::Timer,
+                       public juce::MenuBarModel
 {
 public:
     MainComponent();
@@ -255,6 +314,11 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
+
+    // MenuBarModel
+    juce::StringArray getMenuBarNames() override;
+    juce::PopupMenu getMenuForIndex (int topLevelMenuIndex, const juce::String& menuName) override;
+    void menuItemSelected (int menuItemID, int topLevelMenuIndex) override;
 
     // Drag and Drop
     bool isInterestedInFileDrag (const juce::StringArray& files) override;
@@ -350,6 +414,8 @@ private:
 
     CustomLookAndFeel customLookAndFeel;
     std::unique_ptr<UpdateChecker> updateChecker;
+    juce::MenuBarComponent menuBar;
+    int menuBarHeight = 0;
 
 private:
     juce::Rectangle<int> cardBanner1, cardBanner2;
