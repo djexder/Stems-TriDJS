@@ -11,7 +11,6 @@ public:
     enum class Status {
         Idle,
         Booting,
-        CudaLoading,
         ModelLoading,
         WarmingUp,
         Ready,

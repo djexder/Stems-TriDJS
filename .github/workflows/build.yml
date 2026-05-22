@@ -1,0 +1,74 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  TORCH_VERSION: "2.3.0"
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache LibTorch
+        id: cache-libtorch
+        uses: actions/cache@v4
+        with:
+          path: D:\a\_temp\libtorch
+          key: libtorch-win-${{ env.TORCH_VERSION }}-cpu
+
+      - name: Download LibTorch
+        if: steps.cache-libtorch.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $url = "https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-$($env:TORCH_VERSION)%2Bcpu.zip"
+          $zip = "$env:RUNNER_TEMP\libtorch.zip"
+          Write-Host "Downloading LibTorch $env:TORCH_VERSION (~2GB)..."
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Write-Host "Extracting..."
+          Expand-Archive $zip -DestinationPath $env:RUNNER_TEMP
+
+      - name: Set up MKL DLLs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path redist
+          $mklDlls = Join-Path $env:RUNNER_TEMP libtorch lib mkl_*.dll
+          Copy-Item $mklDlls -Destination redist -ErrorAction SilentlyContinue
+          Get-ChildItem redist -Filter "*.dll" | Select-Object Name
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DTORCH_PATH="$env:RUNNER_TEMP\libtorch"
+
+      - name: Build (Release)
+        run: cmake --build build --config Release
+
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (Test-Path $iscc) {
+            & $iscc setup.iss
+          } else {
+            Write-Host "Inno Setup not available - skipping installer"
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TriDJs-Stems-v${{ github.ref_name }}
+          path: |
+            build/TriDJs_Separador_Stems_artefacts/Release/
+            installer/*.exe

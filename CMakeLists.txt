@@ -5,7 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Configure LibTorch prefix path
-set(CMAKE_PREFIX_PATH "C:/Tridjs-Stems-Suite/libtorch")
+# Default: relative to source tree; override with -DTORCH_PATH=... or env TORCH_PATH
+if(DEFINED TORCH_PATH)
+  set(CMAKE_PREFIX_PATH "${TORCH_PATH}")
+elseif(DEFINED ENV{TORCH_PATH})
+  set(CMAKE_PREFIX_PATH "$ENV{TORCH_PATH}")
+else()
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libtorch")
+endif()
 find_package(Torch REQUIRED)
 
 # Fetch JUCE
@@ -58,4 +65,55 @@ target_link_libraries(TriDJs_Separador_Stems PRIVATE
     juce::juce_graphics
     juce::juce_gui_basics
     juce::juce_gui_extra
+)
+
+# Copy LibTorch runtime DLLs to output directory
+add_custom_command(TARGET TriDJs_Separador_Stems POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_PREFIX_PATH}/lib/c10.dll"
+        "${CMAKE_PREFIX_PATH}/lib/torch.dll"
+        "${CMAKE_PREFIX_PATH}/lib/torch_cpu.dll"
+        "${CMAKE_PREFIX_PATH}/lib/torch_global_deps.dll"
+        "${CMAKE_PREFIX_PATH}/lib/asmjit.dll"
+        "${CMAKE_PREFIX_PATH}/lib/fbgemm.dll"
+        "${CMAKE_PREFIX_PATH}/lib/fbjni.dll"
+        "${CMAKE_PREFIX_PATH}/lib/pytorch_jni.dll"
+        "${CMAKE_PREFIX_PATH}/lib/uv.dll"
+        "${CMAKE_PREFIX_PATH}/lib/libiomp5md.dll"
+        "${CMAKE_PREFIX_PATH}/lib/libiompstubs5md.dll"
+    $<TARGET_FILE_DIR:TriDJs_Separador_Stems>
+)
+
+# Copy Intel MKL runtime DLLs (skip missing files for portability)
+set(MKL_DLL_NAMES
+    mkl_avx.1.dll mkl_avx2.1.dll mkl_avx512.1.dll
+    mkl_core.1.dll mkl_def.1.dll mkl_intel_thread.1.dll
+    mkl_mc.1.dll mkl_mc3.1.dll mkl_msg.dll
+    mkl_pgi_thread.1.dll mkl_rt.1.dll mkl_sequential.1.dll
+    mkl_tbb_thread.1.dll
+    mkl_vml_avx.1.dll mkl_vml_avx2.1.dll mkl_vml_avx512.1.dll
+    mkl_vml_cmpt.1.dll mkl_vml_def.1.dll mkl_vml_mc.1.dll
+    mkl_vml_mc2.1.dll mkl_vml_mc3.1.dll
+)
+set(MKL_DLLS "")
+foreach(dll ${MKL_DLL_NAMES})
+  set(dll_path "${CMAKE_SOURCE_DIR}/redist/${dll}")
+  if(EXISTS "${dll_path}")
+    list(APPEND MKL_DLLS "${dll_path}")
+  else()
+    message(STATUS "MKL DLL not found (optional): ${dll}")
+  endif()
+endforeach()
+if(MKL_DLLS)
+  add_custom_command(TARGET TriDJs_Separador_Stems POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MKL_DLLS} $<TARGET_FILE_DIR:TriDJs_Separador_Stems>
+  )
+endif()
+
+# Copy AI model to resources output directory
+add_custom_command(TARGET TriDJs_Separador_Stems POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:TriDJs_Separador_Stems>/resources"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/modelo/htdemucs_compilado.pt"
+        "$<TARGET_FILE_DIR:TriDJs_Separador_Stems>/resources/htdemucs_compilado.pt"
 )

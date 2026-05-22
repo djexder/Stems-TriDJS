@@ -66,7 +66,6 @@ public:
                 // ESTADO DE CARREGAMENTO REAL DA ENGINE + TIMING ANIMAÇÃO
                 int numLinesToShow = 1;
                 if (status == StemEngine::Status::Booting) numLinesToShow = 1;
-                else if (status == StemEngine::Status::CudaLoading) numLinesToShow = 2;
                 else if (status == StemEngine::Status::ModelLoading) numLinesToShow = 3;
                 else if (status == StemEngine::Status::WarmingUp) numLinesToShow = 5;
                 else if (status == StemEngine::Status::Failed) numLinesToShow = 5;
@@ -83,7 +82,7 @@ public:
                 juce::String prefixes[] = { "[...]", "[...]", "[...]", "[...]", "[...]" };
                 juce::String messages[] = {
                     "Initializing Neural Engine...",
-                    "Loading CUDA Runtime...",
+                    "Loading CPU Runtime...",
                     "Loading AI Model (168MB)...",
                     "Allocating VRAM...",
                     "Warming Up Inference Core..."
@@ -123,7 +122,7 @@ public:
                 // ESTADO PRONTO (READY) - Linhas com "[OK]" verde neon brilhante
                 juce::String prefixes[] = { "[OK]", "[OK]", "[OK]", "[OK]" };
                 juce::String messages[] = {
-                    "CUDA Runtime Loaded",
+                    "CPU Runtime Ready",
                     "AI Model Cached",
                     "VRAM Allocated",
                     "Stem Engine Ready"

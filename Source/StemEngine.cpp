@@ -6,6 +6,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <cstdio>
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -130,7 +131,6 @@ std::string StemEngine::getStatusString() const {
     switch (currentStatus) {
         case Status::Idle:         return "IDLE";
         case Status::Booting:      return "BOOTING";
-        case Status::CudaLoading:  return "CUDA_LOADING";
         case Status::ModelLoading: return "MODEL_LOADING";
         case Status::WarmingUp:    return "WARMING_UP";
         case Status::Ready:        return "READY";
@@ -149,37 +149,61 @@ bool StemEngine::processTrack(const std::string& inputPath,
         torch::NoGradGuard no_grad;
         const std::vector<std::string> STEM_NAMES = {"drums", "bass", "other", "vocals"};
         
-        if (!fs::exists(inputPath)) {
-            return false;
-        }
-
         if (!fs::exists(outputDir)) {
             fs::create_directories(outputDir);
         }
 
-        // Decode input WAV/MP3 files directly
+        // Read entire file into memory first (handle Unicode paths on Windows)
+        #ifdef _WIN32
+            int wide_len = MultiByteToWideChar(CP_UTF8, 0, inputPath.c_str(), -1, nullptr, 0);
+            std::wstring wide_path(wide_len, L'\0');
+            MultiByteToWideChar(CP_UTF8, 0, inputPath.c_str(), -1, &wide_path[0], wide_len);
+            wide_path.resize(wide_len - 1);
+            FILE* f = _wfopen(wide_path.c_str(), L"rb");
+        #else
+            FILE* f = fopen(inputPath.c_str(), "rb");
+        #endif
+        if (!f) return false;
+
+        fseek(f, 0, SEEK_END);
+        long fsize = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        std::vector<char> file_data(fsize);
+        if (fread(file_data.data(), 1, fsize, f) != (size_t)fsize) {
+            fclose(f);
+            return false;
+        }
+        fclose(f);
+
+        // Determine file extension manually
+        std::string ext;
+        auto dot_pos = inputPath.rfind('.');
+        auto slash_pos = inputPath.find_last_of("/\\");
+        if (dot_pos != std::string::npos && (slash_pos == std::string::npos || dot_pos > slash_pos))
+            ext = inputPath.substr(dot_pos);
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        bool is_mp3 = (ext == ".mp3");
+
+        // Decode from memory
         unsigned int channels = 0;
         unsigned int sample_rate = 0;
         drwav_uint64 total_pcm_frame_count = 0;
         float* sample_data = nullptr;
 
-        std::string ext = fs::path(inputPath).extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-        bool is_mp3 = (ext == ".mp3");
-
         if (is_mp3) {
             drmp3_config config;
             drmp3_uint64 mp3_frames;
-            sample_data = drmp3_open_file_and_read_pcm_frames_f32(
-                inputPath.c_str(), &config, &mp3_frames, NULL);
+            sample_data = drmp3_open_memory_and_read_pcm_frames_f32(
+                file_data.data(), file_data.size(), &config, &mp3_frames, NULL);
             if (sample_data) {
                 channels = config.channels;
                 sample_rate = config.sampleRate;
                 total_pcm_frame_count = mp3_frames;
             }
         } else {
-            sample_data = drwav_open_file_and_read_pcm_frames_f32(
-                inputPath.c_str(), &channels, &sample_rate, &total_pcm_frame_count, NULL);
+            sample_data = drwav_open_memory_and_read_pcm_frames_f32(
+                file_data.data(), file_data.size(), &channels, &sample_rate, &total_pcm_frame_count, NULL);
         }
 
         if (sample_data == nullptr) {
@@ -254,7 +278,11 @@ bool StemEngine::processTrack(const std::string& inputPath,
         }
 
         // Export individual wav stems files
-        std::string base_name = fs::path(inputPath).stem().string();
+        auto slash_pos2 = inputPath.find_last_of("/\\");
+        auto dot_pos2 = inputPath.rfind('.');
+        auto name_start = (slash_pos2 == std::string::npos) ? 0 : slash_pos2 + 1;
+        auto name_end = (dot_pos2 != std::string::npos && dot_pos2 > slash_pos2) ? dot_pos2 : inputPath.length();
+        std::string base_name = inputPath.substr(name_start, name_end - name_start);
 
         for (int i = 0; i < 4; ++i) {
             if (shouldCancelCallback && shouldCancelCallback()) {
@@ -264,7 +292,7 @@ bool StemEngine::processTrack(const std::string& inputPath,
             torch::Tensor stem_tensor = output_tensor[i].transpose(0, 1).contiguous();
             
             std::string out_file = base_name + "_" + STEM_NAMES[i] + ".wav";
-            std::string full_out_path = (fs::path(outputDir) / out_file).string();
+            std::string full_out_path = outputDir + "/" + out_file;
 
             drwav_data_format format;
             format.container = drwav_container_riff;
@@ -274,7 +302,16 @@ bool StemEngine::processTrack(const std::string& inputPath,
             format.bitsPerSample = 32;
 
             drwav wav;
-            if (drwav_init_file_write(&wav, full_out_path.c_str(), &format, NULL)) {
+            #ifdef _WIN32
+                int wout_len = MultiByteToWideChar(CP_UTF8, 0, full_out_path.c_str(), -1, nullptr, 0);
+                std::wstring wout_path(wout_len, L'\0');
+                MultiByteToWideChar(CP_UTF8, 0, full_out_path.c_str(), -1, &wout_path[0], wout_len);
+                wout_path.resize(wout_len - 1);
+                bool wrote = drwav_init_file_write_w(&wav, wout_path.c_str(), &format, NULL);
+            #else
+                bool wrote = drwav_init_file_write(&wav, full_out_path.c_str(), &format, NULL);
+            #endif
+            if (wrote) {
                 drwav_write_pcm_frames(&wav, stem_tensor.size(0), stem_tensor.data_ptr<float>());
                 drwav_uninit(&wav);
             }

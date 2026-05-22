@@ -216,7 +216,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
 
   g.setColour(juce::Colour::fromString("#FFC1C6D7")); // on-surface-variant
   g.setFont(juce::Font("Segoe UI", 14.0f, juce::Font::plain));
-  g.drawText(juce::CharPointer_UTF8("Envie qualquer arquivo de áudio para gerar stems de nível profissional (Bateria, Baixo, Vocal, Outros)."),
+  g.drawText(juce::CharPointer_UTF8("Envie o seu arquivo de áudio para gerar stems de nível profissional (Bateria, Baixo, Vocal, Outros)."),
              titleArea, juce::Justification::centred);
 
   // 2. Main Bento Grid Area (remaining space minus bottom section)
@@ -843,14 +843,14 @@ void MainComponent::filesDropped(const juce::StringArray &files, int /*x*/,
 }
 
 void MainComponent::openFileChooser() {
-  static juce::FileChooser fc(
+  auto fc = std::make_shared<juce::FileChooser>(
       "Select an audio file...",
       juce::File::getSpecialLocation(juce::File::userMusicDirectory),
       "*.wav;*.mp3;*.flac");
 
-  fc.launchAsync(juce::FileBrowserComponent::openMode |
+  fc->launchAsync(juce::FileBrowserComponent::openMode |
                      juce::FileBrowserComponent::canSelectFiles,
-                 [this](const juce::FileChooser &chooser) {
+                 [this, fc](const juce::FileChooser &chooser) {
                    if (chooser.getResults().size() > 0)
                      startProcessing(chooser.getResult());
                  });
@@ -1121,15 +1121,15 @@ void MainComponent::exportSingleStem(const juce::File &fileToExport,
   if (!fileToExport.existsAsFile())
     return;
 
-  static juce::FileChooser fc(
+  auto fc = std::make_shared<juce::FileChooser>(
       "Save Stem",
       juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
           .getChildFile(defaultName),
       "*.wav");
 
-  fc.launchAsync(juce::FileBrowserComponent::saveMode |
+  fc->launchAsync(juce::FileBrowserComponent::saveMode |
                      juce::FileBrowserComponent::canSelectFiles,
-                 [fileToExport](const juce::FileChooser &chooser) {
+                 [fileToExport, fc](const juce::FileChooser &chooser) {
                    auto targetFile = chooser.getResult();
                    if (targetFile != juce::File()) {
                      targetFile.deleteFile();
@@ -1140,15 +1140,15 @@ void MainComponent::exportSingleStem(const juce::File &fileToExport,
 
 void MainComponent::exportAllAsZip() {
   juce::String zipName = inputFile.getFileNameWithoutExtension() + "_Stems.zip";
-  static juce::FileChooser fc(
+  auto fc = std::make_shared<juce::FileChooser>(
       "Save All Stems",
       juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
           .getChildFile(zipName),
       "*.zip");
 
-  fc.launchAsync(juce::FileBrowserComponent::saveMode |
+  fc->launchAsync(juce::FileBrowserComponent::saveMode |
                      juce::FileBrowserComponent::canSelectFiles,
-                 [this](const juce::FileChooser &chooser) {
+                 [this, fc](const juce::FileChooser &chooser) {
                    auto targetZip = chooser.getResult();
                    if (targetZip != juce::File()) {
                      targetZip.deleteFile();
@@ -1170,7 +1170,7 @@ void MainComponent::exportAllAsZip() {
                            "All stems compressed successfully.");
                      }
                     }
-                  });
+                   });
 }
 
 void MainComponent::mouseMove(const juce::MouseEvent& event)
@@ -1250,10 +1250,8 @@ void MainComponent::menuItemSelected(int menuItemID, int)
     }
     else if (menuItemID == 2001)
     {
-        auto ver = updateChecker != nullptr ? updateChecker->getCurrentVersion() : "1.0.0";
-
         juce::String aboutText =
-            "TriDJs Stems Suite v" + ver + "\n\n"
+            "TriDJs Stems Suite\n\n"
             + juce::String(juce::CharPointer_UTF8(
             "O TRIDJS STEMS \xc3\xa9 um coletivo musical criado para apoiar m\xc3\xbasicos, DJs, produtores e artistas independentes atrav\xc3\xa9s de ideias, tecnologia, criatividade e novas tend\xc3\xaancias.\n\n"
             "Acreditamos que a tecnologia pode abrir caminhos para novas formas de cria\xc3\xa7\xc3\xa3o musical. Hoje, ferramentas de IA conseguem realizar separa\xc3\xa7\xc3\xb5" "es de stems, identificar elementos sonoros e facilitar processos t\xc3\xa9" "cnicos que antes levavam horas. Mas para n\xc3\xb3s, isso \xc3\xa9 apenas o come\xc3\xa7o.\n\n"
