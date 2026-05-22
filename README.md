@@ -67,4 +67,6 @@ This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt). 
 
 ---
 
+This project uses [SignPath Foundation](https://signpath.io) for free code signing services.
+
 Built by [TriDJs](https://www.tridjs.com.br)
