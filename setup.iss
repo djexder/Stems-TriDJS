@@ -41,45 +41,8 @@ Name: "desktopicon"; Description: "Criar atalho na &Área de Trabalho"; GroupDes
 ; Main executable
 Source: "build\TriDJs_Separador_Stems_artefacts\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
-; LibTorch CPU runtime DLLs
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\c10.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\torch.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\torch_cpu.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\torch_global_deps.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\fbgemm.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\fbjni.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\pytorch_jni.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\asmjit.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\uv.dll"; DestDir: "{app}"; Flags: ignoreversion
-
-; Intel OpenMP
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\libiomp5md.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\libiompstubs5md.dll"; DestDir: "{app}"; Flags: ignoreversion
-
-; Intel MKL (CPU math acceleration)
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_avx.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_avx2.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_avx512.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_core.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_def.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_intel_thread.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_mc.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_mc3.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_msg.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_pgi_thread.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_rt.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_sequential.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_tbb_thread.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-
-; Intel MKL VML (vector math dispatchers)
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_avx.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_avx2.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_avx512.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_cmpt.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_def.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_mc.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_mc2.1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\mkl_vml_mc3.1.dll"; DestDir: "{app}"; Flags: ignoreversion
+; Runtime DLLs (LibTorch, MKL, OpenMP)
+Source: "build\TriDJs_Separador_Stems_artefacts\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Assets (images)
 Source: "build\TriDJs_Separador_Stems_artefacts\Release\logo.png"; DestDir: "{app}"; Flags: ignoreversion
