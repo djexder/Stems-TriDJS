@@ -55,34 +55,8 @@ jobs:
       - name: Build (Release)
         run: cmake --build build --config Release
 
-      - name: Install Inno Setup
-        shell: pwsh
-        run: choco install innosetup --no-progress
-
-      - name: Build installer
-        shell: pwsh
-        run: |
-          $paths = @(
-            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
-            "${env:ProgramFiles(x86)}\Inno Setup\ISCC.exe"
-            "${env:ProgramFiles}\Inno Setup\ISCC.exe"
-          )
-          $iscc = $paths | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $iscc) {
-            Write-Host "ISCC not found - skipping installer"
-            exit 0
-          }
-          Write-Host "Using ISCC: $iscc"
-          & $iscc setup.iss
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "ISCC failed with exit code $LASTEXITCODE - skipping installer"
-          }
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: TriDJs-Stems-v${{ github.ref_name }}
-          path: |
-            build/TriDJs_Separador_Stems_artefacts/Release/
-            installer/*.exe
+          path: build/TriDJs_Separador_Stems_artefacts/Release/
