@@ -63,7 +63,7 @@ To generate the installer, open `setup.iss` with [Inno Setup](https://jrsoftware
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt). See [TERMS_OF_USE.md](TERMS_OF_USE.md) for usage terms.
+This project is licensed under the MIT License. See [LICENSE.txt](LICENSE.txt). See [TERMS_OF_USE.txt](TERMS_OF_USE.txt) for usage terms.
 
 ---
 

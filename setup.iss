@@ -26,7 +26,7 @@ SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExeName}
 SetupIconFile=build\TriDJs_Separador_Stems_artefacts\JuceLibraryCode\icon.ico
-LicenseFile=TERMS_OF_USE.md
+LicenseFile=TERMS_OF_USE.txt
 PrivilegesRequired=admin
 DisableProgramGroupPage=yes
 
