@@ -13,6 +13,8 @@ env:
 jobs:
   build:
     runs-on: windows-2022
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
 
     steps:
       - name: Checkout
@@ -55,8 +57,64 @@ jobs:
       - name: Build (Release)
         run: cmake --build build --config Release
 
+      - name: Copy assets to build output
+        shell: pwsh
+        run: |
+          $release = "build/TriDJs_Separador_Stems_artefacts/Release"
+          Copy-Item "logo.png", "banner.jpg", "banner2.jpg", "splash2.png" $release -ErrorAction SilentlyContinue
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress
+
+      - name: Build installer
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc setup.iss
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::warning::ISCC failed with exit $LASTEXITCODE"
+          }
+
       - name: Upload artifacts
+        id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: TriDJs-Stems-v${{ github.ref_name }}
-          path: build/TriDJs_Separador_Stems_artefacts/Release/
+          name: TriDJs-Stems-${{ github.ref_name }}
+          path: |
+            build/TriDJs_Separador_Stems_artefacts/Release/
+            installer/
+
+  sign:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-2022
+    steps:
+      - name: Check SignPath credentials
+        id: check
+        run: |
+          if ("${{ secrets.SIGNPATH_API_TOKEN }}" -ne "") {
+            echo "available=true" >> $env:GITHUB_OUTPUT
+          }
+        shell: pwsh
+
+      - name: Submit signing request
+        if: steps.check.outputs.available == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ secrets.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ secrets.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: ${{ secrets.SIGNPATH_ARTIFACT_CONFIGURATION_SLUG }}
+          github-artifact-id: ${{ needs.build.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: ./signed
+
+      - name: Upload signed artifact
+        if: steps.check.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TriDJs-Stems-${{ github.ref_name }}-signed
+          path: ./signed/

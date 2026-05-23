@@ -25,7 +25,6 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#MyAppExeName}
-SetupIconFile=build\TriDJs_Separador_Stems_artefacts\JuceLibraryCode\icon.ico
 LicenseFile=TERMS_OF_USE.txt
 PrivilegesRequired=admin
 DisableProgramGroupPage=yes
@@ -45,10 +44,8 @@ Source: "build\TriDJs_Separador_Stems_artefacts\Release\{#MyAppExeName}"; DestDi
 Source: "build\TriDJs_Separador_Stems_artefacts\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Assets (images)
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\logo.png"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\banner.jpg"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\banner2.jpg"; DestDir: "{app}"; Flags: ignoreversion
-Source: "build\TriDJs_Separador_Stems_artefacts\Release\splash2.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\TriDJs_Separador_Stems_artefacts\Release\*.png"; DestDir: "{app}"; Flags: ignoreversion
+Source: "build\TriDJs_Separador_Stems_artefacts\Release\*.jpg"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Resources folder
 Source: "build\TriDJs_Separador_Stems_artefacts\Release\resources\*"; DestDir: "{app}\resources"; Flags: ignoreversion recursesubdirs createallsubdirs
