@@ -1,6 +1,6 @@
 {
   "version": "1.1.0",
-  "download_url": "https://tridjs.com/updatesteams",
+  "download_url": "ms-windows-store://pdp/?ProductId=SEU_ID",
   "update_date": "21/05/2026",
   "mandatory": false,
   "changelog": [
