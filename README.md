@@ -10,7 +10,7 @@ AI-powered audio stem separation for music producers, DJs, and creators.
 - Real-time audio playback of separated stems
 - Built with JUCE audio framework for low-latency processing
 - Standalone Windows desktop application
-- Inno Setup installer for easy deployment
+- MSIX package for Windows Store deployment
 
 ## Technologies
 
@@ -21,13 +21,17 @@ AI-powered audio stem separation for music producers, DJs, and creators.
 | AI Model | HTDemucs (hybrid transformer demucs) |
 | Math Libraries | Intel MKL + OpenMP |
 | Build System | [CMake](https://cmake.org) (≥ 3.18) |
-| Installer | [Inno Setup](https://jrsoftware.org/isinfo.php) |
+| Packaging | MSIX (Windows Store) |
 
 ## Project Structure
 
 ```
 ├── CMakeLists.txt          # CMake build configuration
-├── setup.iss               # Inno Setup installer script
+├── packaging/              # MSIX packaging
+│   ├── AppxManifest.xml    # Package manifest
+│   ├── Assets/             # Store logo assets
+│   ├── build-msix.ps1      # MSIX build script
+│   └── generate-store-assets.py
 ├── Source/                 # C++ source files
 │   ├── Main.cpp
 │   ├── MainComponent.cpp/h
@@ -57,9 +61,15 @@ cmake --build build --config Release
 
 The executable and all required DLLs will be in `build/TriDJs_Separador_Stems_artefacts/Release/`.
 
-## Installer
+## MSIX Package
 
-To generate the installer, open `setup.iss` with [Inno Setup](https://jrsoftware.org/isinfo.php) and compile it. Output goes to `installer/`.
+To generate the MSIX package, run after building:
+
+```bash
+pwsh ./packaging/build-msix.ps1 -BuildOutputDir build/TriDJs_Separador_Stems_artefacts/Release -Version 1.1.0 -OutputDir packaging/output
+```
+
+Requires Windows SDK (for `MakeAppx.exe`). The generated `.msix` can be submitted to the Windows Store or sideloaded with a developer certificate.
 
 ## License
 

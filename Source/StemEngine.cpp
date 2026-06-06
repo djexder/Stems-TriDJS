@@ -292,7 +292,7 @@ bool StemEngine::processTrack(const std::string& inputPath,
             torch::Tensor stem_tensor = output_tensor[i].transpose(0, 1).contiguous();
             
             std::string out_file = base_name + "_" + STEM_NAMES[i] + ".wav";
-            std::string full_out_path = outputDir + "/" + out_file;
+            std::string full_out_path = outputDir + std::string(1, fs::path::preferred_separator) + out_file;
 
             drwav_data_format format;
             format.container = drwav_container_riff;
@@ -302,19 +302,27 @@ bool StemEngine::processTrack(const std::string& inputPath,
             format.bitsPerSample = 32;
 
             drwav wav;
+            bool wrote = false;
             #ifdef _WIN32
                 int wout_len = MultiByteToWideChar(CP_UTF8, 0, full_out_path.c_str(), -1, nullptr, 0);
                 std::wstring wout_path(wout_len, L'\0');
                 MultiByteToWideChar(CP_UTF8, 0, full_out_path.c_str(), -1, &wout_path[0], wout_len);
                 wout_path.resize(wout_len - 1);
-                bool wrote = drwav_init_file_write_w(&wav, wout_path.c_str(), &format, NULL);
+                wrote = drwav_init_file_write_w(&wav, wout_path.c_str(), &format, NULL);
             #else
-                bool wrote = drwav_init_file_write(&wav, full_out_path.c_str(), &format, NULL);
+                wrote = drwav_init_file_write(&wav, full_out_path.c_str(), &format, NULL);
             #endif
-            if (wrote) {
-                drwav_write_pcm_frames(&wav, stem_tensor.size(0), stem_tensor.data_ptr<float>());
-                drwav_uninit(&wav);
+            if (!wrote) {
+                std::cerr << "ERROR: Failed to create WAV file: " << full_out_path << std::endl;
+                continue;
             }
+
+            drwav_uint64 framesWritten = drwav_write_pcm_frames(&wav, stem_tensor.size(0), stem_tensor.data_ptr<float>());
+            if (framesWritten != (drwav_uint64)stem_tensor.size(0)) {
+                std::cerr << "ERROR: Only wrote " << framesWritten << "/" << stem_tensor.size(0)
+                          << " frames for " << full_out_path << std::endl;
+            }
+            drwav_uninit(&wav);
         }
 
         if (progressCallback) progressCallback(1.0f);

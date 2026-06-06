@@ -28,5 +28,8 @@ CMakeSettings.json
 *.exe
 *.dll
 
+# Packaging outputs (binaries too large for GitHub)
+/packaging/output/
+
 # macOS
 .DS_Store

@@ -1150,27 +1150,101 @@ void MainComponent::exportAllAsZip() {
                      juce::FileBrowserComponent::canSelectFiles,
                  [this, fc](const juce::FileChooser &chooser) {
                    auto targetZip = chooser.getResult();
-                   if (targetZip != juce::File()) {
+                   if (targetZip == juce::File())
+                     return;
+
+                   // Log: inicio da exportação
+                   juce::Logger::writeToLog(
+                       "ZIP export started. Target: " + targetZip.getFullPathName());
+
+                   // Deleta arquivo existente antes de criar o novo
+                   if (targetZip.existsAsFile())
                      targetZip.deleteFile();
-                     juce::ZipFile::Builder builder;
 
-                     for (auto &player : stemPlayers) {
-                       if (player->audioFile.existsAsFile()) {
-                         builder.addFile(player->audioFile, 9,
-                                         player->audioFile.getFileName());
-                       }
-                     }
+                   juce::ZipFile::Builder builder;
+                   int filesAdded = 0;
+                   int64 totalSourceBytes = 0;
 
-                     std::unique_ptr<juce::FileOutputStream> outStream(
-                         targetZip.createOutputStream());
-                     if (outStream != nullptr) {
-                       builder.writeToStream(*outStream, nullptr);
-                       juce::AlertWindow::showMessageBoxAsync(
-                           juce::AlertWindow::InfoIcon, "Success",
-                           "All stems compressed successfully.");
+                   for (auto &player : stemPlayers) {
+                     if (player->audioFile.existsAsFile()) {
+                       builder.addFile(player->audioFile, 9,
+                                       player->audioFile.getFileName());
+                       filesAdded++;
+                       totalSourceBytes += player->audioFile.getSize();
+                       juce::Logger::writeToLog(
+                           "  Added to ZIP: " +
+                           player->audioFile.getFileName() +
+                           " (" + juce::String(player->audioFile.getSize()) +
+                           " bytes)");
+                     } else {
+                       juce::Logger::writeToLog(
+                           "  WARNING: Stem file not found: " +
+                           player->audioFile.getFullPathName());
                      }
-                    }
-                   });
+                   }
+
+                   juce::Logger::writeToLog(
+                       "Total files added to ZIP: " + juce::String(filesAdded));
+
+                   if (filesAdded == 0) {
+                     juce::AlertWindow::showMessageBoxAsync(
+                         juce::AlertWindow::WarningIcon, "Erro",
+                         "Nenhum stem disponível para exportar.");
+                     return;
+                   }
+
+                   std::unique_ptr<juce::FileOutputStream> outStream(
+                       targetZip.createOutputStream());
+                   if (outStream == nullptr || outStream->failedToOpen()) {
+                     juce::Logger::writeToLog(
+                         "ERROR: Failed to create output stream for ZIP");
+                     juce::AlertWindow::showMessageBoxAsync(
+                         juce::AlertWindow::WarningIcon, "Erro",
+                         "Não foi possível criar o arquivo ZIP.");
+                     return;
+                   }
+
+                   bool writeOk = builder.writeToStream(*outStream, nullptr);
+                   outStream->flush();
+                   outStream.reset(); // Fecha o stream explicitamente
+
+                   if (!writeOk) {
+                     juce::Logger::writeToLog(
+                         "ERROR: writeToStream returned false");
+                     targetZip.deleteFile();
+                     juce::AlertWindow::showMessageBoxAsync(
+                         juce::AlertWindow::WarningIcon, "Erro",
+                         "Falha ao escrever o arquivo ZIP. Disco cheio?");
+                     return;
+                   }
+
+                   // Valida o ZIP gerado
+                   int64 zipSize = targetZip.getSize();
+                   juce::Logger::writeToLog(
+                       "ZIP written successfully. Size: " +
+                       juce::String(zipSize) + " bytes");
+
+                   // Verifica se o ZIP é válido
+                   juce::ZipFile zipValidator(targetZip);
+                   int numEntries = zipValidator.getNumEntries();
+                   juce::Logger::writeToLog(
+                       "ZIP validation: " + juce::String(numEntries) +
+                       " entries found in archive");
+
+                   if (numEntries != filesAdded) {
+                     juce::Logger::writeToLog(
+                         "WARNING: ZIP entry count (" +
+                         juce::String(numEntries) +
+                         ") does not match files added (" +
+                         juce::String(filesAdded) + ")");
+                   }
+
+                   juce::AlertWindow::showMessageBoxAsync(
+                       juce::AlertWindow::InfoIcon, "Sucesso",
+                       "Todos os stems foram compactados com sucesso!\n" +
+                       juce::String(filesAdded) + " arquivos em " +
+                       juce::String(zipSize / 1024) + " KB");
+                 });
 }
 
 void MainComponent::mouseMove(const juce::MouseEvent& event)

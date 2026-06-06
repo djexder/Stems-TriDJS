@@ -63,19 +63,12 @@ jobs:
           $release = "build/TriDJs_Separador_Stems_artefacts/Release"
           Copy-Item "logo.png", "banner.jpg", "banner2.jpg", "splash2.png" $release -ErrorAction SilentlyContinue
 
-      - name: Install Inno Setup
-        shell: pwsh
-        run: choco install innosetup --no-progress
-
-      - name: Build installer
-        continue-on-error: true
+      - name: Build MSIX package
         shell: pwsh
         run: |
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          & $iscc setup.iss
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "::warning::ISCC failed with exit $LASTEXITCODE"
-          }
+          $version = (Get-Content version.json | ConvertFrom-Json).version
+          $release = "build/TriDJs_Separador_Stems_artefacts/Release"
+          .\packaging\build-msix.ps1 -BuildOutputDir $release -Version $version -OutputDir packaging\output
 
       - name: Upload artifacts
         id: upload
@@ -84,7 +77,7 @@ jobs:
           name: TriDJs-Stems-${{ github.ref_name }}
           path: |
             build/TriDJs_Separador_Stems_artefacts/Release/
-            installer/
+            packaging/output/*.msix
 
   sign:
     needs: build

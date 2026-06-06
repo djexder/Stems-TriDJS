@@ -9,7 +9,7 @@ public:
     TriDJsStemsApplication() {}
 
     const juce::String getApplicationName() override       { return "TriDJs Stems"; }
-    const juce::String getApplicationVersion() override    { return "1.0.0"; }
+    const juce::String getApplicationVersion() override    { return "1.1.1"; }
     bool moreThanOneInstanceAllowed() override             { return true; }
 
     class SplashWindow : public juce::DocumentWindow,

@@ -1,8 +1,8 @@
 ; Inno Setup Script - TriDJs Stems Suite
 ; Generate .ico from logo.png if needed, or use the JUCE-generated icon
 
-#define MyAppName "TriDJs Stems Suite"
-#define MyAppVersion "1.1.0"
+#define MyAppName "TriDJs Stems"
+#define MyAppVersion "1.1.1"
 #define MyAppPublisher "TriDJs"
 #define MyAppURL "https://www.tridjs.com.br"
 #define MyAppExeName "TriDJs Stems.exe"
@@ -24,6 +24,7 @@ OutputBaseFilename=TriDJs_Stems_Setup_v{#MyAppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=setup_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 LicenseFile=TERMS_OF_USE.txt
 PrivilegesRequired=admin
