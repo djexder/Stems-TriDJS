@@ -7,7 +7,7 @@
 
   <Identity Name="Exder.TriDJsStems"
             Publisher="CN=E248730A-8363-430A-8B67-8E5249E0AB45"
-            Version="1.1.1.0" />
+            Version="1.1.3.0" />
 
   <Properties>
     <DisplayName>TriDJs Stems</DisplayName>
