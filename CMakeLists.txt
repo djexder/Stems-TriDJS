@@ -33,6 +33,8 @@ juce_add_gui_app(TriDJs_Separador_Stems
 juce_generate_juce_header(TriDJs_Separador_Stems)
 
 target_sources(TriDJs_Separador_Stems PRIVATE
+    Source/AudioAnalyzer.cpp
+    Source/AudioAnalyzer.h
     Source/Main.cpp
     Source/MainComponent.cpp
     Source/MainComponent.h
@@ -61,6 +63,7 @@ target_link_libraries(TriDJs_Separador_Stems PRIVATE
     juce::juce_audio_utils
     juce::juce_core
     juce::juce_data_structures
+    juce::juce_dsp
     juce::juce_events
     juce::juce_graphics
     juce::juce_gui_basics

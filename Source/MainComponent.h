@@ -388,6 +388,16 @@ private:
     juce::TextButton downloadAllBtn { "Salvar todas" };
     juce::TextButton clearBtn { juce::CharPointer_UTF8("Voltar ao Início") };
 
+    // Track analysis result
+    double trackBpm = 0.0;
+    juce::String trackKey;
+
+    // Export status feedback
+    juce::String exportStatus;
+    int exportStatusCounter = 0;
+    bool exportWriteStarted = false;
+    int exportStartCheckCounter = 0;
+
     // Audio Engine
     juce::AudioFormatManager formatManager;
     juce::MixerAudioSource mixerSource;

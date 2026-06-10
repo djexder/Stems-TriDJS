@@ -3,6 +3,14 @@
 #include <string>
 #include <functional>
 
+struct TrackInfo
+{
+    double bpm = 0.0;
+    std::string key;
+    bool bpmDetected = false;
+    bool keyDetected = false;
+};
+
 class StemEngine {
 public:
     static StemEngine& getInstance();
@@ -36,6 +44,8 @@ public:
     Status getStatus() const { return currentStatus; }
     std::string getStatusString() const;
 
+    TrackInfo getTrackInfo() const { return trackInfo; }
+
 private:
     StemEngine() = default;
     ~StemEngine() { shutdown(); }
@@ -47,6 +57,7 @@ private:
     bool warmedUp = false;
     Status currentStatus = Status::Idle;
     std::string errorMessage;
+    TrackInfo trackInfo;
 
     // Opaque private implementation wrapper to completely isolate PyTorch headers
     struct Impl;

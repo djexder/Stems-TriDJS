@@ -1,4 +1,5 @@
 #include "StemEngine.h"
+#include "AudioAnalyzer.h"
 #include <iostream>
 #include <vector>
 #include <filesystem>
@@ -214,6 +215,18 @@ bool StemEngine::processTrack(const std::string& inputPath,
             if (is_mp3) drmp3_free(sample_data, nullptr);
             else drwav_free(sample_data, nullptr);
             return false;
+        }
+
+        // Run BPM and key detection on the original audio data
+        {
+            AudioAnalyzer analyzer;
+            int totalSamples = (int)(total_pcm_frame_count * channels);
+            auto result = analyzer.analyze(sample_data, totalSamples,
+                                           (int)sample_rate, (int)channels);
+            trackInfo.bpm = result.bpm;
+            trackInfo.key = result.key;
+            trackInfo.bpmDetected = result.bpmDetected;
+            trackInfo.keyDetected = result.keyDetected;
         }
 
         // Transform floating arrays into LibTorch Tensors

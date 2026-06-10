@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 #include "StemEngine.h"
+#include <thread>
 
 // Define styling colors based on HTML neon theme
 const juce::Colour colBackground = juce::Colour::fromString("#FF131313");
@@ -49,11 +50,23 @@ MainComponent::MainComponent() {
 
   addChildComponent(cancelBtn);
   cancelBtn.onClick = [this] {
-    if (engineWorker != nullptr)
-      engineWorker->signalThreadShouldExit();
-    currentState = AppState::ScreenUpload;
-    resized();
-    repaint();
+    juce::AlertWindow::showAsync(
+        juce::MessageBoxOptions::makeOptionsOkCancel(
+            juce::AlertWindow::QuestionIcon,
+            juce::String(juce::CharPointer_UTF8("Cancelar Processamento?")),
+            juce::String(juce::CharPointer_UTF8("Tem certeza que deseja cancelar a extra\xc3\xa7\xc3\xa3o dos stems?")),
+            juce::String(juce::CharPointer_UTF8("Sim")),
+            juce::String(juce::CharPointer_UTF8("N\xc3\xa3o")),
+            this),
+        [this](int result) {
+          if (result == 1) {
+            if (engineWorker != nullptr)
+              engineWorker->signalThreadShouldExit();
+            currentState = AppState::ScreenUpload;
+            resized();
+            repaint();
+          }
+        });
   };
   cancelBtn.setVisible(false);
 
@@ -79,6 +92,11 @@ MainComponent::MainComponent() {
       player->seekBar.setVisible(false);
     }
     stemPlayers.clear();
+
+    exportStatus.clear();
+    exportStatusCounter = 0;
+    exportWriteStarted = false;
+    exportStartCheckCounter = 0;
 
     cleanTempDirectory();
     currentState = AppState::ScreenUpload;
@@ -635,7 +653,7 @@ void MainComponent::drawResultsScreen(juce::Graphics &g) {
   bounds.removeFromTop(60 + menuBarHeight);
 
   // Draw Title Header for results
-  auto headerArea = bounds.removeFromTop(90);
+  auto headerArea = bounds.removeFromTop(60);
   g.setColour(juce::Colours::white);
   g.setFont(juce::Font("Segoe UI", 20.0f, juce::Font::bold));
   g.drawText("Stems Extraction Complete", headerArea.removeFromTop(30),
@@ -645,6 +663,42 @@ void MainComponent::drawResultsScreen(juce::Graphics &g) {
   g.setFont(juce::Font("Segoe UI", 13.0f, juce::Font::plain));
   g.drawText("Track: " + inputFile.getFileName(), headerArea,
              juce::Justification::topLeft);
+
+  // BPM and Key info bar
+  auto infoArea = bounds.removeFromTop(40);
+  g.setColour(juce::Colour::fromString("#FF1C1B1B"));
+  g.fillRoundedRectangle(infoArea.toFloat(), 8.0f);
+  g.setColour(juce::Colour::fromString("#FF353534"));
+  g.drawRoundedRectangle(infoArea.toFloat(), 8.0f, 1.0f);
+
+  g.setFont(juce::Font("Consolas", 14.0f, juce::Font::bold));
+  auto halfW = infoArea.getWidth() / 2;
+
+  if (trackBpm > 0.0)
+  {
+      g.setColour(juce::Colour::fromString("#FF50FFAF"));
+      g.drawText("BPM: " + juce::String((int)std::round(trackBpm)),
+                 infoArea.withWidth(halfW), juce::Justification::centred);
+  }
+  else
+  {
+      g.setColour(juce::Colour::fromString("#FF8B90A0"));
+      g.drawText("BPM: --",
+                 infoArea.withWidth(halfW), juce::Justification::centred);
+  }
+
+  if (trackKey.isNotEmpty())
+  {
+      g.setColour(juce::Colour::fromString("#FFADC7FF"));
+      g.drawText("Key: " + trackKey,
+                 infoArea.withLeft(halfW).withWidth(halfW), juce::Justification::centred);
+  }
+  else
+  {
+      g.setColour(juce::Colour::fromString("#FF8B90A0"));
+      g.drawText("Key: --",
+                 infoArea.withLeft(halfW).withWidth(halfW), juce::Justification::centred);
+  }
 
   // Each player box is drawn in resized() bounds, let's replicate the box
   // drawing here
@@ -710,6 +764,46 @@ void MainComponent::drawResultsScreen(juce::Graphics &g) {
     }
 
     yOffset += playerHeight + gap;
+  }
+
+  // Export status toast overlay
+  if (exportStatus.isNotEmpty())
+  {
+      auto toastW = 340;
+      auto toastH = 48;
+      auto toastBounds = juce::Rectangle<int>((getWidth() - toastW) / 2,
+                                               getHeight() - 120,
+                                               toastW, toastH);
+
+      g.setColour(juce::Colour::fromString("#FF1C1B1B").withAlpha(0.95f));
+      g.fillRoundedRectangle(toastBounds.toFloat(), 10.0f);
+      g.setColour(juce::Colour::fromString("#FF353534"));
+      g.drawRoundedRectangle(toastBounds.toFloat(), 10.0f, 1.0f);
+
+      g.setFont(juce::Font("Segoe UI", 15.0f, juce::Font::bold));
+
+      if (exportStatus == "ZIP salvo com sucesso!")
+      {
+          g.setColour(juce::Colour::fromString("#FF50FFAF"));
+      }
+      else
+      {
+          g.setColour(juce::Colour::fromString("#FFFFB4AB"));
+          // Draw a small animated dots indicator
+          auto dots = (juce::Time::getMillisecondCounter() / 500) % 4;
+          juce::String suffix;
+          for (int d = 0; d < dots; ++d) suffix += ".";
+          g.drawText(exportStatus + suffix,
+                     toastBounds.withTrimmedRight(20),
+                     juce::Justification::centred);
+          // Draw amber circle indicator
+          auto dotArea = toastBounds.removeFromRight(28).withSizeKeepingCentre(8, 8);
+          g.setColour(juce::Colour::fromString("#FFFFB4AB").withAlpha(0.6f));
+          g.fillEllipse(dotArea.toFloat());
+          return;
+      }
+
+      g.drawText(exportStatus, toastBounds, juce::Justification::centred);
   }
 }
 
@@ -781,7 +875,7 @@ void MainComponent::resized() {
     clearBtn.setVisible(true);
     cancelBtn.setVisible(false);
 
-    bounds.removeFromTop(90); // skip headers
+    bounds.removeFromTop(100); // skip headers + info bar
 
     int yOffset = bounds.getY() + 10;
     int playerHeight = 80;
@@ -954,9 +1048,32 @@ void MainComponent::timerCallback() {
       }
     }
   }
+
+  // Auto-dismiss export status toast
+  if (exportStatusCounter > 0) {
+    exportStatusCounter--;
+    if (exportStatusCounter == 0) {
+      exportStatus.clear();
+      repaint();
+    }
+  }
+
+  // 2-second safety check: if "Preparando ZIP..." never transitioned to actual writing, clear it
+  if (exportStartCheckCounter > 0) {
+    exportStartCheckCounter--;
+    if (exportStartCheckCounter == 0 && exportStatus == "Preparando ZIP..." && !exportWriteStarted) {
+      exportStatus.clear();
+      exportWriteStarted = false;
+      repaint();
+    }
+  }
 }
 
 void MainComponent::finalizeProcessing() {
+  auto info = StemEngine::getInstance().getTrackInfo();
+  trackBpm = info.bpm;
+  trackKey = info.key;
+
   loadAudioFiles();
   currentState = AppState::ScreenResults;
   resized();
@@ -1044,7 +1161,9 @@ void MainComponent::setupStemPlayer(StemPlayer &player,
   player.downloadBtn.setColour(juce::TextButton::textColourOffId,
                                juce::Colours::white);
   player.downloadBtn.onClick = [this, &player] {
-    exportSingleStem(player.audioFile, player.name + ".wav");
+    auto baseName = inputFile.getFileNameWithoutExtension();
+    auto stemName = player.name.toLowerCase();
+    exportSingleStem(player.audioFile, baseName + "_" + stemName + ".wav");
   };
 
   addChildComponent(player.seekBar);
@@ -1139,7 +1258,8 @@ void MainComponent::exportSingleStem(const juce::File &fileToExport,
 }
 
 void MainComponent::exportAllAsZip() {
-  juce::String zipName = inputFile.getFileNameWithoutExtension() + "_Stems.zip";
+  auto baseName = inputFile.getFileNameWithoutExtension();
+  juce::String zipName = baseName + "_Stems.zip";
   auto fc = std::make_shared<juce::FileChooser>(
       "Save All Stems",
       juce::File::getSpecialLocation(juce::File::userDesktopDirectory)
@@ -1153,97 +1273,66 @@ void MainComponent::exportAllAsZip() {
                    if (targetZip == juce::File())
                      return;
 
-                   // Log: inicio da exportação
-                   juce::Logger::writeToLog(
-                       "ZIP export started. Target: " + targetZip.getFullPathName());
+                   exportStatus = "Preparando ZIP...";
+                   exportWriteStarted = false;
+                   exportStartCheckCounter = 67; // ~2 seconds safety net
+                   repaint();
 
-                   // Deleta arquivo existente antes de criar o novo
-                   if (targetZip.existsAsFile())
-                     targetZip.deleteFile();
+                   // Capture stem files on message thread
+                   std::vector<juce::File> stemFiles;
+                   for (auto &p : stemPlayers)
+                     if (p->audioFile.existsAsFile())
+                       stemFiles.push_back(p->audioFile);
 
-                   juce::ZipFile::Builder builder;
-                   int filesAdded = 0;
-                   int64 totalSourceBytes = 0;
+                   // Build ZIP on background thread so UI stays responsive
+                   std::thread([this, targetZip, stemFiles]() {
+                     bool ok = false;
+                     juce::String errorMsg;
 
-                   for (auto &player : stemPlayers) {
-                     if (player->audioFile.existsAsFile()) {
-                       builder.addFile(player->audioFile, 9,
-                                       player->audioFile.getFileName());
-                       filesAdded++;
-                       totalSourceBytes += player->audioFile.getSize();
-                       juce::Logger::writeToLog(
-                           "  Added to ZIP: " +
-                           player->audioFile.getFileName() +
-                           " (" + juce::String(player->audioFile.getSize()) +
-                           " bytes)");
+                     if (stemFiles.empty()) {
+                       errorMsg = "Nenhum stem dispon\u00edvel para exportar.";
                      } else {
-                       juce::Logger::writeToLog(
-                           "  WARNING: Stem file not found: " +
-                           player->audioFile.getFullPathName());
+                       if (targetZip.existsAsFile())
+                         targetZip.deleteFile();
+
+                       juce::ZipFile::Builder builder;
+                       for (auto &f : stemFiles)
+                         builder.addFile(f, 9, f.getFileName());
+
+                       // Signal that we're about to write (disarms the 2s safety timeout)
+                       juce::MessageManager::callAsync([this]() {
+                         exportWriteStarted = true;
+                       });
+
+                       auto outStream = targetZip.createOutputStream();
+                       if (outStream == nullptr || outStream->failedToOpen()) {
+                         errorMsg = "N\u00e3o foi poss\u00edvel criar o arquivo ZIP.";
+                       } else {
+                         ok = builder.writeToStream(*outStream, nullptr);
+                         outStream->flush();
+                         outStream.reset();
+                         if (!ok) {
+                           targetZip.deleteFile();
+                           errorMsg = "Falha ao escrever o arquivo ZIP. Disco cheio?";
+                         }
+                       }
                      }
-                   }
 
-                   juce::Logger::writeToLog(
-                       "Total files added to ZIP: " + juce::String(filesAdded));
-
-                   if (filesAdded == 0) {
-                     juce::AlertWindow::showMessageBoxAsync(
-                         juce::AlertWindow::WarningIcon, "Erro",
-                         "Nenhum stem disponível para exportar.");
-                     return;
-                   }
-
-                   std::unique_ptr<juce::FileOutputStream> outStream(
-                       targetZip.createOutputStream());
-                   if (outStream == nullptr || outStream->failedToOpen()) {
-                     juce::Logger::writeToLog(
-                         "ERROR: Failed to create output stream for ZIP");
-                     juce::AlertWindow::showMessageBoxAsync(
-                         juce::AlertWindow::WarningIcon, "Erro",
-                         "Não foi possível criar o arquivo ZIP.");
-                     return;
-                   }
-
-                   bool writeOk = builder.writeToStream(*outStream, nullptr);
-                   outStream->flush();
-                   outStream.reset(); // Fecha o stream explicitamente
-
-                   if (!writeOk) {
-                     juce::Logger::writeToLog(
-                         "ERROR: writeToStream returned false");
-                     targetZip.deleteFile();
-                     juce::AlertWindow::showMessageBoxAsync(
-                         juce::AlertWindow::WarningIcon, "Erro",
-                         "Falha ao escrever o arquivo ZIP. Disco cheio?");
-                     return;
-                   }
-
-                   // Valida o ZIP gerado
-                   int64 zipSize = targetZip.getSize();
-                   juce::Logger::writeToLog(
-                       "ZIP written successfully. Size: " +
-                       juce::String(zipSize) + " bytes");
-
-                   // Verifica se o ZIP é válido
-                   juce::ZipFile zipValidator(targetZip);
-                   int numEntries = zipValidator.getNumEntries();
-                   juce::Logger::writeToLog(
-                       "ZIP validation: " + juce::String(numEntries) +
-                       " entries found in archive");
-
-                   if (numEntries != filesAdded) {
-                     juce::Logger::writeToLog(
-                         "WARNING: ZIP entry count (" +
-                         juce::String(numEntries) +
-                         ") does not match files added (" +
-                         juce::String(filesAdded) + ")");
-                   }
-
-                   juce::AlertWindow::showMessageBoxAsync(
-                       juce::AlertWindow::InfoIcon, "Sucesso",
-                       "Todos os stems foram compactados com sucesso!\n" +
-                       juce::String(filesAdded) + " arquivos em " +
-                       juce::String(zipSize / 1024) + " KB");
+                      juce::MessageManager::callAsync([this, ok, errorMsg]() {
+                        if (ok) {
+                          exportStatus = "ZIP salvo com sucesso!";
+                          exportStatusCounter = 90;
+                        } else {
+                          exportStatus.clear();
+                          exportWriteStarted = false;
+                          exportStartCheckCounter = 0;
+                          if (errorMsg.isNotEmpty())
+                            juce::AlertWindow::showMessageBoxAsync(
+                                juce::AlertWindow::WarningIcon, "Erro", errorMsg);
+                        }
+                       repaint();
+                     });
+                   }).detach();
                  });
 }
 
@@ -1291,7 +1380,7 @@ void MainComponent::mouseExit(const juce::MouseEvent& event)
 //==============================================================================
 juce::StringArray MainComponent::getMenuBarNames()
 {
-    return { "Arquivo", "Sobre" };
+    return { "Arquivo", "Sobre o Projeto" };
 }
 
 juce::PopupMenu MainComponent::getMenuForIndex(int, const juce::String& menuName)
@@ -1304,9 +1393,9 @@ juce::PopupMenu MainComponent::getMenuForIndex(int, const juce::String& menuName
         menu.addSeparator();
         menu.addItem(1002, "Sair", true, false);
     }
-    else if (menuName == "Sobre")
+    else if (menuName == "Sobre o Projeto")
     {
-        menu.addItem(2001, "Sobre", true, false);
+        menu.addItem(2001, "Sobre o Projeto", true, false);
     }
 
     return menu;
@@ -1325,15 +1414,29 @@ void MainComponent::menuItemSelected(int menuItemID, int)
     else if (menuItemID == 2001)
     {
         juce::String aboutText =
-            "TriDJs Stems Suite\n\n"
-            + juce::String(juce::CharPointer_UTF8(
-            "O TRIDJS STEMS \xc3\xa9 um coletivo musical criado para apoiar m\xc3\xbasicos, DJs, produtores e artistas independentes atrav\xc3\xa9s de ideias, tecnologia, criatividade e novas tend\xc3\xaancias.\n\n"
-            "Acreditamos que a tecnologia pode abrir caminhos para novas formas de cria\xc3\xa7\xc3\xa3o musical. Hoje, ferramentas de IA conseguem realizar separa\xc3\xa7\xc3\xb5" "es de stems, identificar elementos sonoros e facilitar processos t\xc3\xa9" "cnicos que antes levavam horas. Mas para n\xc3\xb3s, isso \xc3\xa9 apenas o come\xc3\xa7o.\n\n"
-            "O que realmente importa acontece dali para frente: a imagina\xc3\xa7\xc3\xa3o humana.\n\n"
-            "\xc3\x89 o ser humano que transforma essas possibilidades em algo novo. Misturar conceitos, criar mashups, experimentar estilos, reconstruir m\xc3\xbasicas, criar novas atmosferas e desenvolver sons \xc3\xbanicos \xe2\x80\x94 isso nunca ser\xc3\xa1 substitu\xc3\xad" "do por uma m\xc3\xa1quina.\n\n"
-            "No TRIDJS STEMS, usamos a tecnologia como meio para potencializar a criatividade. Ela n\xc3\xa3o substitui o talento humano, ela facilita processos, conecta ideias e ajuda artistas a explorarem possibilidades que antes pareciam imposs\xc3\xadveis.\n\n"
-            "Nosso objetivo \xc3\xa9 unir m\xc3\xbasica, inova\xc3\xa7\xc3\xa3o e colabora\xc3\xa7\xc3\xa3o para incentivar novas experi\xc3\xaancias sonoras e fortalecer a cultura criativa. Porque acreditamos que o futuro da m\xc3\xbasica n\xc3\xa3o est\xc3\xa1 apenas na tecnologia, mas na capacidade humana de usar essas ferramentas para criar algo original, emocional e verdadeiro.\n\n"
-            "TRIDJS STEMS \xe2\x80\x94 transformando tecnologia em criatividade sonora."));
+            juce::String(juce::CharPointer_UTF8(
+            "TRIDJS STEMS \xe2\x80\x93 Termos de Uso, Privacidade e Manifesto\n\n"
+            "O TRIDJS STEMS \xc3\xa9 um projeto colaborativo, volunt\xc3\xa1rio e sem fins lucrativos, desenvolvido para impulsionar a criatividade musical, a inova\xc3\xa7\xc3\xa3o tecnol\xc3\xb3gica e a conex\xc3\xa3o entre m\xc3\xbasicos, DJs, produtores e artistas independentes.\n\n"
+            "1. Privacidade e Transpar\xc3\xaancia\n"
+            "O TRIDJS STEMS n\xc3\xa3o coleta, comercializa ou compartilha dados pessoais dos usu\xc3\xa1rios para fins comerciais. Nosso compromisso \xc3\xa9 estritamente com o desenvolvimento criativo, a seguran\xc3\xa7a da comunidade e a dissemina\xc3\xa7\xc3\xa3o do conhecimento musical.\n\n"
+            "2. Aviso Sobre Conte\xc3\xbado de Terceiros\n"
+            "O aplicativo TRIDJS STEMS pode exibir banners, links, campanhas, eventos e materiais promocionais fornecidos por parceiros, apoiadores ou patrocinadores. Sobre esses conte\xc3\xbados, aplicam-se as seguintes condi\xc3\xa7\xc3\xb5es:\n\n"
+            "Responsabilidade Exclusiva: Todo o material divulgado \xc3\xa9 de inteira responsabilidade de seus respectivos autores ou anunciantes. O TRIDJS STEMS atua apenas como canal de divulga\xc3\xa7\xc3\xa3o.\n\n"
+            "Isen\xc3\xa7\xc3\xa3o de Endosso: A exibi\xc3\xa7\xc3\xa3o de qualquer an\xc3\xbancio ou parceria n\xc3\xa3o constitui recomenda\xc3\xa7\xc3\xa3o, garantia, endosso oficial ou valida\xc3\xa7\xc3\xa3o do TRIDJS STEMS sobre os produtos, servi\xc3\xa7os ou opini\xc3\xb5es ali expressos.\n\n"
+            "Rela\xc3\xa7\xc3\xb5es Comerciais: Qualquer negocia\xc3\xa7\xc3\xa3o, compra, inscri\xc3\xa7\xc3\xa3o em eventos ou reclama\xc3\xa7\xc3\xa3o deve ser tratada diretamente com os respons\xc3\xa1veis pelo material anunciado.\n\n"
+            "Limita\xc3\xa7\xc3\xa3o de Responsabilidade: O TRIDJS STEMS, seus desenvolvedores e volunt\xc3\xa1rios n\xc3\xa3o se responsabilizam por danos, preju\xc3\xadzos, descumprimento de ofertas ou expectativas frustradas decorrentes do acesso a servi\xc3\xa7os de terceiros.\n\n"
+            "Independ\xc3\xaancia Editorial\n"
+            "Os parceiros e anunciantes n\xc3\xa3o possuem qualquer participa\xc3\xa7\xc3\xa3o na administra\xc3\xa7\xc3\xa3o ou gest\xc3\xa3o do TRIDJS STEMS. Da mesma forma, a plataforma n\xc3\xa3o exerce controle editorial pr\xc3\xa9vio sobre os conte\xc3\xbados de terceiros e n\xc3\xa3o responde por suas atividades.\n\n"
+            "3. Contato e Den\xc3\xbancias\n"
+            "Caso voc\xc3\xaa identifique algum conte\xc3\xbado inadequado, irregular ou que viole direitos autorais e de terceiros, solicite uma an\xc3\xa1lise imediata atrav\xc3\xa9s do nosso site oficial:\n\n"
+            "\xf0\x9f\x8c\x90 tridjs.com.br\n\n"
+            "\xe2\x9a\xa0\xef\xb8\x8f Ao utilizar o aplicativo, o usu\xc3\xa1rio declara estar ciente e de acordo com todos os termos descritos neste aviso.\n\n"
+            "4. Manifesto: TriDJs Stems Suite\n"
+            "TRIDJS STEMS \xe2\x80\x94 Transformando tecnologia em criatividade sonora.\n\n"
+            "Acreditamos que a tecnologia deve servir como uma ponte para o imposs\xc3\xadvel, abrindo caminhos in\xc3\xa9ditos para a express\xc3\xa3o art\xc3\xadstica. Hoje, ferramentas de Intelig\xc3\xaancia Artificial conseguem separar stems, identificar elementos sonoros e resolver em segundos processos t\xc3\xa9cnicos que antes levavam horas.\n\n"
+            "Mas, para n\xc3\xb3s, isso \xc3\xa9 apenas o ponto de partida. O que realmente importa vem logo em seguida: a imagina\xc3\xa7\xc3\xa3o humana.\n\n"
+            "\xc3\x89 o artista que transforma dados em emo\xc3\xa7\xc3\xa3o. Misturar conceitos, criar mashups, subverter estilos, desconstruir faixas e dar vida a novas atmosferas sonoras s\xc3\xa3o atos de pura sensibilidade \xe2\x80\x94 algo que nenhuma m\xc3\xa1quina pode replicar.\n\n"
+            "No TRIDJS STEMS, a tecnologia n\xc3\xa3o substitui o talento; ela o potencializa. Nosso objetivo \xc3\xa9 unir m\xc3\xbasica e inova\xc3\xa7\xc3\xa3o para fortalecer a cultura independente, provando que o futuro da m\xc3\xbasica n\xc3\xa3o reside nos algoritmos, mas na capacidade humana de us\xc3\xa1-los para criar algo original, visceral e verdadeiro."));
 
         class AboutPanel : public juce::Component
         {
@@ -1384,7 +1487,7 @@ void MainComponent::menuItemSelected(int menuItemID, int)
         auto* panel = new AboutPanel(aboutText);
         panel->setSize(400, 400);
         juce::DialogWindow::LaunchOptions o;
-        o.dialogTitle = "Sobre o TriDJs Stems";
+        o.dialogTitle = "Sobre o Projeto";
         o.dialogBackgroundColour = juce::Colour::fromString("#FF0D0D0D");
         o.content.setOwned(panel);
         o.componentToCentreAround = this;
