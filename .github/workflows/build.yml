@@ -61,7 +61,7 @@ jobs:
         shell: pwsh
         run: |
           $release = "build/TriDJs_Separador_Stems_artefacts/Release"
-          Copy-Item "logo.png", "banner.jpg", "banner2.jpg", "splash2.png" $release -ErrorAction SilentlyContinue
+          Copy-Item "logo.png", "banner.jpg", "setme.png", "splash2.png" $release -ErrorAction SilentlyContinue
 
       - name: Build MSIX package
         shell: pwsh

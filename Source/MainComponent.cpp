@@ -321,7 +321,7 @@ void MainComponent::drawUploadScreen(juce::Graphics &g) {
 
   {
       static juce::Image banner2 = juce::ImageFileFormat::loadFrom(
-          juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("banner2.jpg"));
+          juce::File::getSpecialLocation(juce::File::currentExecutableFile).getSiblingFile("setme.png"));
       if (banner2.isValid())
           g.drawImageWithin(banner2, cardBanner2.getX(), cardBanner2.getY(), cardBanner2.getWidth(), cardBanner2.getHeight(),
                             juce::RectanglePlacement::centred | juce::RectanglePlacement::onlyReduceInSize);
@@ -1360,7 +1360,7 @@ void MainComponent::mouseUp(const juce::MouseEvent& event)
     if (cardBanner1.contains(event.getPosition()))
         juce::URL("http://tridjs.com.br").launchInDefaultBrowser();
     else if (cardBanner2.contains(event.getPosition()))
-        juce::URL("https://www.youtube.com/@Tridjs").launchInDefaultBrowser();
+        juce::URL("https://setme.vip/").launchInDefaultBrowser();
     else if (downloadBtnBounds.contains(event.getPosition()) && updateChecker != nullptr
              && updateChecker->getStatus() == UpdateChecker::Status::UpdateAvailable)
         juce::URL(updateChecker->getVersionInfo().downloadUrl).launchInDefaultBrowser();
