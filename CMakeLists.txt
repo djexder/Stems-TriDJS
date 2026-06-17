@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(TriDJs_Separador_Stems VERSION 1.1.3 LANGUAGES CXX)
+project(TriDJs_Separador_Stems VERSION 1.1.4 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,7 +25,7 @@ FetchContent_MakeAvailable(juce)
 
 juce_add_gui_app(TriDJs_Separador_Stems
     PRODUCT_NAME "TriDJs Stems"
-    VERSION 1.1.3
+    VERSION 1.1.4
     ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/logo.png"
     ICON_SMALL "${CMAKE_CURRENT_SOURCE_DIR}/logo.png"
 )

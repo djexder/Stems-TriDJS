@@ -6,7 +6,7 @@
 #define UPDATE_CHECK_URL "https://raw.githubusercontent.com/djexder/Stems-TriDJS/main/version.json"
 
 // Versão atual do software
-#define APP_VERSION "1.1.3"
+#define APP_VERSION "1.1.4"
 
 class UpdateChecker : public juce::Thread
 {

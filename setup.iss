@@ -2,7 +2,7 @@
 ; Generate .ico from logo.png if needed, or use the JUCE-generated icon
 
 #define MyAppName "TriDJs Stems"
-#define MyAppVersion "1.1.3"
+#define MyAppVersion "1.1.4"
 #define MyAppPublisher "TriDJs"
 #define MyAppURL "https://www.tridjs.com.br"
 #define MyAppExeName "TriDJs Stems.exe"

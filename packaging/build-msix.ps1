@@ -58,7 +58,7 @@ function New-MsixPackage {
     $assetsSrc = Join-Path $PackagingDir "Assets"
     Copy-Item -Recurse -Path $assetsSrc -Destination (Join-Path $staging "Assets")
 
-    $msixName = "TriDJs.Stems_${Version}_x64.msix"
+    $msixName = "Exder.TriDJsStems_${Version}_x64.msix"
     $msixPath = Join-Path $OutputDir $msixName
 
     Write-Host "Creating MSIX package: $msixPath"
